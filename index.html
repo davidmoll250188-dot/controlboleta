@@ -199,7 +199,7 @@
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-800" id="dash-title">Resumen General</h2>
                     <p class="text-slate-500 text-sm mt-1">
-                        Monitoreo de 14 campos (Áreas, Competencias Transversales, Conducta y Comentarios).
+                        Monitoreo de campos académicos y conductuales.
                     </p>
                 </div>
 
@@ -236,7 +236,7 @@
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
                         <div>
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campos Evaluados</p>
-                            <h3 class="text-3xl font-bold text-emerald-600 mt-2">14</h3>
+                            <h3 class="text-3xl font-bold text-emerald-600 mt-2" id="kpi-fields-count">14</h3>
                         </div>
                         <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
                     </div>
@@ -313,26 +313,8 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                    <th class="px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10">ID</th>
-                                    <th class="px-2 py-4 w-16 text-center border-r border-slate-100">Hoja</th>
-                                    <th class="px-4 py-4 min-w-[250px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10">Apellidos y Nombres</th>
-                                    <!-- Dynamic Headers -->
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Matemática</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Comunicación</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Inglés</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Arte y Cult.</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">DPCYC</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ciencias Soc.</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ed. Física</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">EPT</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ciencia y Tec.</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Religión</div></th>
-                                    <!-- Nuevos Campos -->
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-amber-50/30"><div class="matrix-header">Comp. Transv. 1</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-amber-50/30"><div class="matrix-header">Comp. Transv. 2</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-emerald-50/30"><div class="matrix-header">Conducta (C)</div></th>
-                                    <th class="px-2 align-bottom border-r border-slate-100 bg-slate-100/50"><div class="matrix-header">Comentario G.</div></th>
+                                <tr id="matrix-header-row" class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <!-- Headers will be injected here by JS -->
                                 </tr>
                             </thead>
                             <tbody id="matrix-body" class="divide-y divide-slate-100 text-sm">
@@ -418,305 +400,259 @@
     <script>
         // --- 1. STATE & CONFIG ---
         
-        // Estructura de Grados
         const GRADES = {
-            'inicial': {
-                label: 'Inicial',
-                icon: 'baby',
-                levels: [
-                    { id: 'ini_3', name: '3 Años' },
-                    { id: 'ini_4', name: '4 Años' },
-                    { id: 'ini_5', name: '5 Años' }
-                ]
-            },
-            'primaria': {
-                label: 'Primaria',
-                icon: 'book-open',
-                levels: [
-                    { id: 'pri_1', name: '1° Primaria' },
-                    { id: 'pri_2', name: '2° Primaria' },
-                    { id: 'pri_3', name: '3° Primaria' },
-                    { id: 'pri_4', name: '4° Primaria' },
-                    { id: 'pri_5', name: '5° Primaria' },
-                    { id: 'pri_6', name: '6° Primaria' }
-                ]
-            },
-            'secundaria': {
-                label: 'Secundaria',
-                icon: 'graduation-cap',
-                levels: [
-                    { id: 'sec_1', name: '1° Secundaria' },
-                    { id: 'sec_2', name: '2° Secundaria' },
-                    { id: 'sec_3', name: '3° Secundaria' },
-                    { id: 'sec_4', name: '4° Secundaria' },
-                    { id: 'sec_5', name: '5° Secundaria' }
-                ]
-            }
+            'inicial': { label: 'Inicial', icon: 'baby', levels: [ {id:'ini_3',name:'3 Años'}, {id:'ini_4',name:'4 Años'}, {id:'ini_5',name:'5 Años'} ] },
+            'primaria': { label: 'Primaria', icon: 'book-open', levels: [ {id:'pri_1',name:'1° Primaria'}, {id:'pri_2',name:'2° Primaria'}, {id:'pri_3',name:'3° Primaria'}, {id:'pri_4',name:'4° Primaria'}, {id:'pri_5',name:'5° Primaria'}, {id:'pri_6',name:'6° Primaria'} ] },
+            'secundaria': { label: 'Secundaria', icon: 'graduation-cap', levels: [ {id:'sec_1',name:'1° Secundaria'}, {id:'sec_2',name:'2° Secundaria'}, {id:'sec_3',name:'3° Secundaria'}, {id:'sec_4',name:'4° Secundaria'}, {id:'sec_5',name:'5° Secundaria'} ] }
+        };
+
+        // CONFIGURACIÓN DE COLUMNAS ACTUALIZADA
+        const SUBJECTS_CONFIG = {
+            'primaria': [
+                { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
+                { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
+                { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
+                { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
+                { key: 'ps', label: 'Personal Soc.', color: '#4F46E5', csv: ['PS', 'PERSONAL', 'SOCIAL'] }, 
+                { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['ER', 'REL', 'RELIGION', 'RELIGIÓN'] },
+                { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
+                { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
+                { key: 'cg', label: 'Comentario G.', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] },
+                { key: 'c', label: 'Comportamiento', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] }
+            ],
+            'secundaria': [
+                { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
+                { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
+                { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
+                { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
+                { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA', 'DESARROLLO', 'CIUDADANIA'] }, 
+                { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
+                { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
+                { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION', 'RELIGIÓN'] },
+                { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
+                { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
+                { key: 'c', label: 'Conducta', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] },
+                { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] }
+            ],
+            'inicial': [
+                { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
+                { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
+                { key: 'psico', label: 'Psicomotriz', color: '#4F46E5', csv: ['PSICO', 'PSICOMOTRIZ'] },
+                { key: 'ps', label: 'Personal Soc.', color: '#4F46E5', csv: ['PS', 'PERSONAL', 'SOCIAL'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
+                { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
+                { key: 'cg', label: 'Comentario G.', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] },
+                { key: 'c', label: 'Comportamiento', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] }
+            ]
         };
 
         let state = {
-            activeGradeId: 'sec_5', // Default
-            dataCache: {}, // { gradeId: { students: [], lastUpdated: date } }
+            activeGradeId: 'sec_5',
+            dataCache: {},
             urls: JSON.parse(localStorage.getItem('bt_urls')) || {},
             filterEmpty: false,
             charts: {}
         };
 
-        // --- 2. INITIALIZATION & UI LOGIC ---
+        // --- 2. INITIALIZATION ---
 
         document.addEventListener('DOMContentLoaded', () => {
             renderSidebarMenu();
             initCharts();
-            
-            // Search Listener
-            document.getElementById('search-student').addEventListener('input', (e) => {
-                renderMatrix(e.target.value);
-            });
-
-            // Initial Load
+            document.getElementById('search-student').addEventListener('input', (e) => renderMatrix(e.target.value));
             loadGrade(state.activeGradeId);
         });
 
         function renderSidebarMenu() {
             const container = document.getElementById('grades-menu-container');
             let html = '';
-
             for (const [key, section] of Object.entries(GRADES)) {
-                html += `
-                    <div class="mb-2 mt-4 px-2">
-                        <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
-                            <i data-lucide="${section.icon}" class="w-3 h-3"></i> ${section.label}
-                        </div>
-                        <div class="space-y-0.5">
-                `;
-                
+                html += `<div class="mb-2 mt-4 px-2">
+                    <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
+                        <i data-lucide="${section.icon}" class="w-3 h-3"></i> ${section.label}
+                    </div><div class="space-y-0.5">`;
                 section.levels.forEach(level => {
-                    html += `
-                        <div onclick="loadGrade('${level.id}')" id="grade-btn-${level.id}" 
+                    html += `<div onclick="loadGrade('${level.id}')" id="grade-btn-${level.id}" 
                              class="grade-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-600 transition-all hover:bg-slate-50">
-                            <span>${level.name}</span>
-                            <span id="dot-${level.id}" class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
-                        </div>
-                    `;
+                            <span>${level.name}</span><span id="dot-${level.id}" class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+                        </div>`;
                 });
-
                 html += `</div></div>`;
             }
-            
             container.innerHTML = html;
             lucide.createIcons();
         }
 
-        async function loadGrade(gradeId) {
-            // Update State
-            state.activeGradeId = gradeId;
-            
-            // UI Updates
-            document.querySelectorAll('.grade-item').forEach(el => el.classList.remove('active'));
-            const activeBtn = document.getElementById(`grade-btn-${gradeId}`);
-            if(activeBtn) activeBtn.classList.add('active');
+        // --- 3. DATA LOGIC & DIAGNOSTICS ---
 
-            // Find Grade Name & Level
-            let gradeName = "Desconocido";
-            let levelLabel = "Sistema";
+        function getCurrentLevel() {
+            if (state.activeGradeId.startsWith('pri')) return 'primaria';
+            if (state.activeGradeId.startsWith('sec')) return 'secundaria';
+            if (state.activeGradeId.startsWith('ini')) return 'inicial';
+            return 'secundaria';
+        }
+
+        function getCurrentSubjects() {
+            return SUBJECTS_CONFIG[getCurrentLevel()] || SUBJECTS_CONFIG['secundaria'];
+        }
+
+        async function loadGrade(gradeId) {
+            state.activeGradeId = gradeId;
+            document.querySelectorAll('.grade-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`grade-btn-${gradeId}`)?.classList.add('active');
+
+            let gradeName = "Desconocido", levelLabel = "Sistema";
             for(const [key, section] of Object.entries(GRADES)){
                 const found = section.levels.find(l => l.id === gradeId);
-                if(found) {
-                    gradeName = found.name;
-                    levelLabel = section.label;
-                    break;
-                }
+                if(found) { gradeName = found.name; levelLabel = section.label; break; }
             }
 
-            // Update Headers & Titles
             document.getElementById('footer-grade-badge').textContent = gradeName.charAt(0);
             document.getElementById('footer-grade-name').textContent = gradeName;
             document.getElementById('footer-grade-level').textContent = levelLabel;
             document.getElementById('dash-title').textContent = `Resumen: ${gradeName}`;
             document.getElementById('mobile-header-title').textContent = gradeName;
             
-            // Check Data
-            const gradeUrl = state.urls[gradeId];
-            
-            // 1. Limpiar vista
             clearView();
+            const gradeUrl = state.urls[gradeId];
 
             if (state.dataCache[gradeId]) {
-                // Datos ya en memoria
                 renderGradeData(state.dataCache[gradeId]);
             } else if (gradeUrl) {
-                // Tenemos URL, intentar descargar
                 updateStatus('syncing', 'Sincronizando...');
-                await fetchUrlData(gradeUrl, true); // true = isAutoLoad
+                await fetchUrlData(gradeUrl, true);
             } else {
-                // No hay datos ni URL
                 showNoDataState(gradeName);
             }
         }
-
-        function clearView() {
-            document.getElementById('no-data-state').classList.add('hidden');
-            document.getElementById('view-dashboard').classList.remove('hide');
-            document.getElementById('kpi-total').textContent = '0';
-            updateCharts([], []); // Reset charts
-            renderMatrix();
-        }
-
-        function showNoDataState(gradeName) {
-            document.getElementById('no-data-state').classList.remove('hidden');
-            document.getElementById('empty-state-grade').textContent = gradeName;
-            updateStatus('empty', 'Sin datos');
-            
-            // En modo "sin datos", los gráficos se vacían
-            updateCharts([], []);
-        }
-
-        function updateStatus(type, text) {
-            const dot = document.getElementById('status-dot');
-            const ping = document.getElementById('status-ping');
-            const txt = document.getElementById('status-text');
-            const navDot = document.getElementById(`dot-${state.activeGradeId}`);
-
-            txt.textContent = text;
-
-            if (type === 'success') {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
-                ping.classList.remove('hide');
-                ping.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute top-0 left-0";
-                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
-            } else if (type === 'syncing') {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
-                ping.classList.add('hide');
-                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500";
-            } else {
-                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
-                ping.classList.add('hide');
-                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-slate-200";
-            }
-        }
-
-        // --- 3. DATA LOGIC (CSV Processing) ---
 
         function processCSV(results) {
             if (!results.data || results.data.length === 0) return;
 
             const rows = results.data;
             const headers = rows[0].map(h => h.toUpperCase().trim());
-            const findCol = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
-
             const colMap = {
                 name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
-                hoja: headers.findIndex(h => h.includes('HOJA') || h.includes('TOMAR COMO REFERENCIA') || h.includes('ID')),
-                mat: findCol(['MAT_IV']),
-                com: findCol(['COM_IV']),
-                ing: findCol(['ING_IV']),
-                art: findCol(['ART_IV', 'CUL_IV']),
-                dpc: findCol(['DCPCY_IV', 'DPCYC_IV', 'DPCC_IV']),
-                soc: findCol(['CS_IV', 'SOC_IV']),
-                ef:  findCol(['EF_IV']),
-                ept: findCol(['EPT_IV']),
-                cyt: findCol(['CYT_IV', 'CT_IV', 'CIENCIA_IV']),
-                rel: findCol(['ER_IV', 'REL_IV']),
-                trans1: findCol(['TRANS1_IV']),
-                trans2: findCol(['TRANS2_IV']),
-                cg: findCol(['CG_IV']), 
-                c: findCol(['C_IV'])
+                hoja: headers.findIndex(h => h.includes('HOJA') || h.includes('TOMAR COMO REFERENCIA') || h.includes('ID'))
             };
+
+            const activeSubjects = getCurrentSubjects();
+            const normalize = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            const headersNorm = headers.map(normalize);
+
+            const subjectCols = {};
+            const missingSubjects = [];
+
+            activeSubjects.forEach(f => {
+                let idx = headersNorm.findIndex(h => {
+                    const tokens = h.split(/[^A-Z0-9]+/); 
+                    const hasKeyword = tokens.some(t => f.csv.includes(t));
+                    const hasBimestre = h.includes('IV') || h.includes('4') || h.includes(' IV');
+                    return hasKeyword && hasBimestre;
+                });
+
+                if (idx === -1 && f.key !== 'c' && f.key !== 'cs') {
+                     idx = headersNorm.findIndex(h => f.csv.some(k => h.includes(k)));
+                }
+                
+                subjectCols[f.key] = idx;
+                if(idx === -1) missingSubjects.push(f.label);
+            });
 
             const newStudents = rows.slice(1).map((row, idx) => {
                 if (!row[colMap.name]) return null;
-                const isFilled = (colIdx) => {
-                    if (colIdx === -1) return false;
-                    const val = row[colIdx];
-                    if (!val) return false;
-                    const cleanVal = val.toString().trim().toUpperCase();
-                    return cleanVal !== '' && cleanVal !== 'FALSE' && !cleanVal.includes('#DIV') && cleanVal !== '-';
-                };
-
-                return {
+                const student = {
                     id: idx + 1,
                     hoja: colMap.hoja !== -1 ? (row[colMap.hoja] || `N${idx+1}`) : `N${idx+1}`,
-                    name: row[colMap.name],
-                    mat: isFilled(colMap.mat),
-                    com: isFilled(colMap.com),
-                    ing: isFilled(colMap.ing),
-                    art: isFilled(colMap.art),
-                    dpc: isFilled(colMap.dpc),
-                    soc: isFilled(colMap.soc),
-                    ef:  isFilled(colMap.ef),
-                    ept: isFilled(colMap.ept),
-                    cyt: isFilled(colMap.cyt),
-                    rel: isFilled(colMap.rel),
-                    trans1: isFilled(colMap.trans1),
-                    trans2: isFilled(colMap.trans2),
-                    cg: isFilled(colMap.cg),
-                    c: isFilled(colMap.c)
+                    name: row[colMap.name]
                 };
+                activeSubjects.forEach(f => {
+                    const colIdx = subjectCols[f.key];
+                    if (colIdx !== -1 && row[colIdx]) {
+                        const val = row[colIdx].toString().trim().toUpperCase();
+                        student[f.key] = (val !== '' && val !== 'FALSE' && !val.includes('#DIV') && val !== '-');
+                    } else {
+                        student[f.key] = false;
+                    }
+                });
+                return student;
             }).filter(s => s !== null);
 
             if (newStudents.length > 0) {
-                // Save to Cache
                 state.dataCache[state.activeGradeId] = newStudents;
-                
-                // Render
                 renderGradeData(newStudents);
                 
-                updateStatus('success', 'Conectado');
+                // DIAGNOSTIC ALERT
+                if(missingSubjects.length > 0) {
+                    alert(`⚠️ ADVERTENCIA: No se encontraron las columnas para:\n- ${missingSubjects.join('\n- ')}\n\nVerifique los nombres en su archivo.`);
+                    updateStatus('syncing', 'Incompleto');
+                } else {
+                    updateStatus('success', 'Conectado');
+                }
                 closeModal();
             } else {
-                showStatus('Error: CSV vacío o formato incorrecto', 'error');
+                showStatus('Error: CSV vacío', 'error');
             }
         }
+
+        // --- 4. RENDERERS & CHARTS ---
 
         function renderGradeData(students) {
             document.getElementById('no-data-state').classList.add('hidden');
             document.getElementById('view-dashboard').classList.remove('hide');
-            
-            // Temporary set state.students for legacy render functions
             state.students = students; 
-            
-            updateUI(); // Calls renderDashboard & renderMatrix
+            updateUI();
         }
 
-        // --- 4. RENDERERS (Reused from previous code, simplified) ---
-
-        function updateUI() {
-            renderDashboard();
-            renderMatrix();
-        }
+        function updateUI() { renderDashboard(); renderMatrix(); }
 
         function renderDashboard() {
             const s = state.students || [];
-            if(s.length === 0) return;
-
-            const subjects = ['mat','com','ing','art','dpc','soc','ef','ept','cyt','rel','trans1','trans2','c','cg'];
-            
+            const subjects = getCurrentSubjects();
             document.getElementById('kpi-total').textContent = s.length;
+            document.getElementById('kpi-fields-count').textContent = subjects.length;
+
+            if(s.length === 0) { updateCharts([], []); return; }
 
             const totalSlots = s.length * subjects.length;
-            const totalFilled = s.reduce((acc, stu) => acc + subjects.reduce((a, sub) => a + (stu[sub] ? 1 : 0), 0), 0);
-            const totalPending = totalSlots - totalFilled;
+            const totalFilled = s.reduce((acc, stu) => acc + subjects.reduce((a, sub) => a + (stu[sub.key] ? 1 : 0), 0), 0);
             const percent = totalSlots > 0 ? Math.round((totalFilled / totalSlots) * 100) : 0;
 
             document.getElementById('kpi-progress').textContent = `${percent}%`;
-            document.getElementById('kpi-missing').textContent = totalPending;
+            document.getElementById('kpi-missing').textContent = totalSlots - totalFilled;
             document.getElementById('donut-percent').textContent = `${percent}%`;
             document.getElementById('stat-filled').textContent = totalFilled;
-            document.getElementById('stat-pending').textContent = totalPending;
+            document.getElementById('stat-pending').textContent = totalSlots - totalFilled;
 
             updateCharts(s, subjects);
         }
 
         function renderMatrix(searchTerm = '') {
             const tbody = document.getElementById('matrix-body');
+            const thead = document.getElementById('matrix-header-row');
             const term = searchTerm.toLowerCase();
-            const subjects = ['mat','com','ing','art','dpc','soc','ef','ept','cyt','rel','trans1','trans2','c','cg'];
+            const subjects = getCurrentSubjects();
             const s = state.students || [];
+
+            let headerHTML = `<th class="px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10">ID</th><th class="px-2 py-4 w-16 text-center border-r border-slate-100">Hoja</th><th class="px-4 py-4 min-w-[250px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10">Apellidos y Nombres</th>`;
+            subjects.forEach(sub => {
+                let bgClass = "bg-indigo-50/30";
+                if(sub.key.startsWith('trans')) bgClass = "bg-amber-50/30";
+                if(sub.key === 'c') bgClass = "bg-emerald-50/30";
+                if(sub.key === 'cg') bgClass = "bg-slate-100/50";
+                headerHTML += `<th class="px-2 align-bottom border-r border-slate-100 ${bgClass}"><div class="matrix-header">${sub.label}</div></th>`;
+            });
+            thead.innerHTML = headerHTML;
 
             const filtered = s.filter(stu => {
                 const matchesName = stu.name.toLowerCase().includes(term) || stu.hoja.toLowerCase().includes(term);
                 if (!matchesName) return false;
-                if (state.filterEmpty) return subjects.some(sub => !stu[sub]);
+                if (state.filterEmpty) return subjects.some(sub => !stu[sub.key]);
                 return true;
             });
 
@@ -725,145 +661,144 @@
                 tbody.innerHTML = '';
                 return;
             }
-            
             document.getElementById('matrix-empty').classList.add('hidden');
 
             const renderCell = (filled) => filled 
                 ? `<td class="px-1 py-2 border-r border-slate-50 bg-emerald-50/50 text-center"><div class="mx-auto w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i></div></td>`
                 : `<td class="px-1 py-2 border-r border-slate-50 bg-red-50/30 text-center group-hover:bg-red-50"><div class="mx-auto w-5 h-5 rounded-full bg-red-50 border border-red-100 flex items-center justify-center"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></div></td>`;
 
-            tbody.innerHTML = filtered.map(stu => `
-                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 group">
-                    <td class="px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10">${String(stu.id).padStart(2,'0')}</td>
-                    <td class="px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100">${stu.hoja}</td>
-                    <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10">${stu.name}</td>
-                    ${renderCell(stu.mat)} ${renderCell(stu.com)} ${renderCell(stu.ing)} ${renderCell(stu.art)}
-                    ${renderCell(stu.dpc)} ${renderCell(stu.soc)} ${renderCell(stu.ef)} ${renderCell(stu.ept)}
-                    ${renderCell(stu.cyt)} ${renderCell(stu.rel)} ${renderCell(stu.trans1)} ${renderCell(stu.trans2)}
-                    ${renderCell(stu.c)} ${renderCell(stu.cg)}
-                </tr>
-            `).join('');
-            
+            tbody.innerHTML = filtered.map(stu => {
+                let rowHTML = `<tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 group"><td class="px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10">${String(stu.id).padStart(2,'0')}</td><td class="px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100">${stu.hoja}</td><td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10">${stu.name}</td>`;
+                subjects.forEach(sub => rowHTML += renderCell(stu[sub.key]));
+                return rowHTML + `</tr>`;
+            }).join('');
             lucide.createIcons();
         }
-
-        // --- 5. CHART CONFIGURATION ---
 
         function initCharts() {
             const ctxSubjects = document.getElementById('subjectsChart').getContext('2d');
             state.charts.bar = new Chart(ctxSubjects, {
                 type: 'bar',
-                data: {
-                    labels: ['Matemática', 'Comunic.', 'Inglés', 'Arte', 'DPCYC', 'Sociales', 'Ed. Fís.', 'EPT', 'CyT', 'Religión', 'Transv 1', 'Transv 2', 'Conducta', 'Comentario'],
-                    datasets: [{
-                        label: 'Boletas Llenas', data: [],
-                        backgroundColor: (ctx) => {
-                            const idx = ctx.dataIndex;
-                            if (idx === 12) return '#10B981';
-                            if (idx === 13) return '#64748B';
-                            return idx >= 10 ? '#F59E0B' : '#4F46E5';
-                        },
-                        borderRadius: 4, barPercentage: 0.7
-                    }]
-                },
+                data: { labels: [], datasets: [{ label: 'Llenas', data: [], backgroundColor: [], borderRadius: 4, barPercentage: 0.7 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter' } } }, x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } } } }
             });
-
             const ctxGlobal = document.getElementById('globalDonut').getContext('2d');
             state.charts.donut = new Chart(ctxGlobal, {
                 type: 'doughnut',
-                data: {
-                    labels: ['Completado', 'Pendiente'],
-                    datasets: [{ data: [0, 100], backgroundColor: ['#4F46E5', '#EF4444'], borderWidth: 0, hoverOffset: 4 }]
-                },
+                data: { labels: ['Completado', 'Pendiente'], datasets: [{ data: [0, 100], backgroundColor: ['#4F46E5', '#EF4444'], borderWidth: 0, hoverOffset: 4 }] },
                 options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
             });
         }
 
         function updateCharts(students, subjects) {
-            if(students.length === 0) {
-                state.charts.bar.data.datasets[0].data = [];
-                state.charts.bar.update();
-                state.charts.donut.data.datasets[0].data = [0, 1];
-                state.charts.donut.update();
+            if(students.length === 0 || subjects.length === 0) {
+                state.charts.bar.data.labels = []; state.charts.bar.data.datasets[0].data = []; state.charts.bar.update();
+                state.charts.donut.data.datasets[0].data = [0, 1]; state.charts.donut.update();
                 return;
             }
-            const dataCounts = subjects.map(sub => students.filter(s => s[sub]).length);
+            state.charts.bar.data.labels = subjects.map(s => s.label);
+            state.charts.bar.data.datasets[0].backgroundColor = subjects.map(s => s.color);
+            const dataCounts = subjects.map(sub => students.filter(s => s[sub.key]).length);
             state.charts.bar.data.datasets[0].data = dataCounts;
             state.charts.bar.options.scales.y.max = students.length;
             state.charts.bar.update();
-
             const totalFilled = dataCounts.reduce((a, b) => a + b, 0);
-            const totalPending = (students.length * subjects.length) - totalFilled;
-            state.charts.donut.data.datasets[0].data = [totalFilled, totalPending];
+            state.charts.donut.data.datasets[0].data = [totalFilled, (students.length * subjects.length) - totalFilled];
             state.charts.donut.update();
         }
 
-        // --- 6. MODAL & SYNC HANDLERS ---
+        function clearView() {
+            document.getElementById('no-data-state').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hide');
+            document.getElementById('kpi-total').textContent = '0';
+            updateCharts([], []);
+            renderMatrix();
+        }
+
+        function showNoDataState(gradeName) {
+            document.getElementById('no-data-state').classList.remove('hidden');
+            document.getElementById('empty-state-grade').textContent = gradeName;
+            updateStatus('empty', 'Sin datos');
+            updateCharts([], []);
+        }
+
+        function updateStatus(type, text) {
+            document.getElementById('status-text').textContent = text;
+            const dot = document.getElementById('status-dot');
+            const ping = document.getElementById('status-ping');
+            if (type === 'success') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                ping.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute top-0 left-0";
+                ping.classList.remove('hide');
+            } else if (type === 'syncing') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+                ping.classList.add('hide');
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
+                ping.classList.add('hide');
+            }
+        }
 
         function openModal() {
             document.getElementById('modal-grade-label').textContent = document.getElementById('footer-grade-name').textContent;
             document.getElementById('modal-grade-target').textContent = document.getElementById('footer-grade-name').textContent;
-            
-            // Prefill URL if exists
             document.getElementById('drive-url').value = state.urls[state.activeGradeId] || '';
-            
             document.getElementById('data-modal').classList.remove('hidden'); 
         }
         function closeModal() { document.getElementById('data-modal').classList.add('hidden'); }
-
         function showStatus(msg, type) {
             const el = document.getElementById('modal-msg');
             el.textContent = msg;
             el.className = `p-3 rounded-lg text-xs font-medium text-center ${type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`;
             el.classList.remove('hidden');
         }
+        function switchView(viewName) {
+            ['dashboard', 'matrix'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`nav-${v}`);
+                if (v === viewName) { el.classList.remove('hide'); btn.classList.add('nav-active'); btn.classList.remove('nav-inactive'); } 
+                else { el.classList.add('hide'); btn.classList.remove('nav-active'); btn.classList.add('nav-inactive'); }
+            });
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
+        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleEmptyOnly() {
+            state.filterEmpty = !state.filterEmpty;
+            document.getElementById('btn-filter-empty').classList.toggle('bg-indigo-50');
+            document.getElementById('btn-filter-empty').classList.toggle('text-indigo-600');
+            renderMatrix(document.getElementById('search-student').value);
+        }
 
         function handleFileUpload(input) {
             const file = input.files[0];
             if (!file) return;
-            showStatus('Procesando archivo...', 'success');
-            Papa.parse(file, {
-                complete: processCSV,
-                error: () => showStatus('Error al leer el archivo', 'error')
-            });
+            showStatus('Procesando...', 'success');
+            Papa.parse(file, { complete: processCSV, error: () => showStatus('Error lectura', 'error') });
         }
 
         async function handleUrlSync() {
             let url = document.getElementById('drive-url').value.trim();
             if (!url) { showStatus('URL inválida', 'error'); return; }
-
-            // Save URL to persistent storage
             state.urls[state.activeGradeId] = url;
             localStorage.setItem('bt_urls', JSON.stringify(state.urls));
-
             await fetchUrlData(url);
         }
 
         async function fetchUrlData(url, isAutoLoad = false) {
             if(!isAutoLoad) document.getElementById('status-text').textContent = "Sincronizando...";
-            
-            // Auto-fix Google Drive Links
             if (url.includes('docs.google.com/spreadsheets')) {
-                if (url.includes('/edit')) {
-                    url = url.replace(/\/edit.*$/, '/export?format=csv');
-                } else if (url.includes('/pubhtml')) {
-                    url = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
-                }
+                if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
+                else if (url.includes('/pubhtml')) url = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
             }
-
             const strategies = [
                 (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
                 (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
                 (u) => u
             ];
-
             let csvText = null;
-
             for (const getUrl of strategies) {
                 try {
                     const fetchUrl = getUrl(url);
-                    console.log("Conectando:", fetchUrl);
                     const response = await fetch(fetchUrl);
                     if (response.ok) {
                         csvText = await response.text();
@@ -871,40 +806,9 @@
                     }
                 } catch (e) { console.warn("Falló estrategia:", e); }
             }
-
-            if (csvText) {
-                Papa.parse(csvText, {
-                    complete: processCSV,
-                    error: () => {
-                        if(!isAutoLoad) showStatus('Error CSV', 'error');
-                        showNoDataState("Error Formato");
-                    }
-                });
-            } else {
-                if(!isAutoLoad) showStatus('Fallo de conexión. Verifica que sea público.', 'error');
-                showNoDataState("Error Conexión");
-            }
+            if (csvText) Papa.parse(csvText, { complete: processCSV, error: () => { if(!isAutoLoad) showStatus('Error CSV', 'error'); showNoDataState("Error Formato"); } });
+            else { if(!isAutoLoad) showStatus('Fallo de conexión', 'error'); showNoDataState("Error Conexión"); }
         }
-
-        // View Switcher (Helper)
-        function switchView(viewName) {
-            ['dashboard', 'matrix'].forEach(v => {
-                const el = document.getElementById(`view-${v}`);
-                const btn = document.getElementById(`nav-${v}`);
-                if (v === viewName) {
-                    el.classList.remove('hide');
-                    btn.classList.add('nav-active');
-                    btn.classList.remove('nav-inactive');
-                } else {
-                    el.classList.add('hide');
-                    btn.classList.remove('nav-active');
-                    btn.classList.add('nav-inactive');
-                }
-            });
-            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
-        }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-
     </script>
 </body>
 </html>
