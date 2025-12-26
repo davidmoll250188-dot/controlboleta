@@ -47,7 +47,7 @@
     <div id="loader-fallback">
         <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
         <h2 class="text-slate-600 font-bold">Cargando BoletaTracker...</h2>
-        <p class="text-xs text-slate-400 mt-2">Versión v2.5 (Búsqueda Super Flexible)</p>
+        <p class="text-xs text-slate-400 mt-2">Versión v2.6 (Exact Match Fix)</p>
     </div>
 
     <div id="root"></div>
@@ -125,16 +125,15 @@
             { level: 'SECUNDARIA', icon: 'school', grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
         ];
 
-        // CONFIGURACIÓN DE COLUMNAS (SÚPER FLEXIBLE)
-        // Agregamos todas las variantes posibles de nombres
+        // CONFIGURACIÓN DE COLUMNAS (DEFINITIVA)
+        // Incluimos tus encabezados exactos (DCPYC, CYT, CS, C)
         const SUBJECT_FIELDS = [
             { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE'] },
             { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU'] },
             { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
             { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL'] },
-            // Agregamos DCPYC a la lista de DPC
-            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DPC', 'DPCYC', 'DPCC', 'DCPYC', 'PERSONA'] }, 
-            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['SOC', 'CS', 'SOCIALES', 'HISTORIA'] },
+            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA'] }, 
+            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
             { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
             { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
             { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
@@ -437,7 +436,7 @@
                 
                 if(colMap.name === -1) return [];
 
-                // 3. Mapeo de Cursos Inteligente
+                // 3. Mapeo de Cursos con Lógica de Precisión
                 // Normaliza texto para ignorar tildes
                 const normalize = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                 const headersNorm = headers.map(normalize);
@@ -445,25 +444,38 @@
                 const subjectCols = {};
                 SUBJECT_FIELDS.forEach(f => {
                     // Estrategia:
-                    // 1. Buscar si algún header contiene la palabra clave DEL CURSO (keyword)
-                    // 2. Y opcionalmente contiene 'IV' o '4' (para asegurar que es el bimestre correcto)
-                    // 3. Si no encuentra con 'IV', agarra la columna que tenga solo el nombre (fallback)
+                    // 1. SPLIT: Dividir el encabezado por el guion bajo ('_')
+                    // 2. CHECK: Verificar si la primera parte es exactamente una de las palabras clave
+                    // Ej: "DCPYC_IV" -> "DCPYC". ¿Está "DCPYC" en la lista? Sí -> Match.
+                    // Ej: "C_IV" -> "C". ¿Está "C" en la lista? Sí -> Match.
+                    // Esto evita que "C" coincida con "CS", "CYT" o "COM".
 
                     let idx = headersNorm.findIndex(h => {
-                         const hasKeyword = f.csv.some(k => h.includes(k)); // Ej: h.includes('RELIGION')
-                         const hasBimestre = h.includes('_IV') || h.includes(' IV') || h.includes('4') || h.endsWith('IV');
-                         return hasKeyword && hasBimestre;
+                         const parts = h.split('_');
+                         const prefix = parts[0]; // La palabra antes del guion
+                         
+                         // Coincidencia exacta del prefijo
+                         if (f.csv.includes(prefix)) return true;
+                         
+                         // Fallback: si no hay guion, intentamos match exacto total
+                         if (f.csv.includes(h)) return true;
+
+                         return false;
                     });
 
-                    // Si no encontró con 'IV', intenta buscar solo por nombre (ej: columna se llama solo 'RELIGION')
-                    if (idx === -1) {
-                         idx = headersNorm.findIndex(h => f.csv.some(k => h.includes(k)));
+                    // Si no encontró con lógica estricta, intentamos lógica "contains" (con mucho cuidado)
+                    // Solo si NO es una clave corta peligrosa como 'C'
+                    if (idx === -1 && f.key !== 'c') {
+                        idx = headersNorm.findIndex(h => {
+                            const hasKeyword = f.csv.some(k => h.includes(k));
+                            const hasBimestre = h.includes('_IV') || h.includes(' IV') || h.includes('4');
+                            return hasKeyword && hasBimestre;
+                        });
                     }
                     
                     subjectCols[f.key] = idx;
                 });
                 
-                // Debug (Verifica esto en la consola del navegador si algo falla)
                 console.log("Columnas Encontradas:", subjectCols);
 
                 // 4. Extracción de Datos
