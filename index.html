@@ -141,6 +141,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-[10px] font-medium text-slate-700 truncate" id="status-text">Sin datos</p>
+                        <p class="text-[9px] text-slate-400 truncate hidden" id="status-subtext">Caché Local</p>
                     </div>
                 </div>
 
@@ -427,11 +428,12 @@
                 { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
                 { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
                 { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
-                { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA', 'DESARROLLO', 'CIUDADANIA'] }, 
+                // --- FIX: Búsqueda amplia para DPCYC ---
+                { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA', 'DESARROLLO', 'CIUDADANIA', 'CIVICA', 'DPCC_IV', 'DPC_IV'] }, 
                 { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
                 { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
                 { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
-                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE', 'TECNOLOGIA', 'NATURA'] },
                 { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION', 'RELIGIÓN'] },
                 { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
                 { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
@@ -522,10 +524,16 @@
             const gradeUrl = state.urls[gradeId];
 
             if (state.dataCache[gradeId]) {
+                // LOAD FROM CACHE FIRST (SPEED FIX)
                 renderGradeData(state.dataCache[gradeId]);
+                document.getElementById('status-subtext').classList.remove('hidden');
+                
+                // Then try to update silently if URL exists
+                if(gradeUrl) fetchUrlData(gradeUrl, true);
             } else if (gradeUrl) {
+                document.getElementById('status-subtext').classList.add('hidden');
                 updateStatus('syncing', 'Sincronizando...');
-                await fetchUrlData(gradeUrl, true);
+                await fetchUrlData(gradeUrl, false);
             } else {
                 showNoDataState(gradeName);
             }
@@ -550,15 +558,17 @@
 
             activeSubjects.forEach(f => {
                 let idx = headersNorm.findIndex(h => {
+                    // 1. Strict Token Matching (Safe)
                     const tokens = h.split(/[^A-Z0-9]+/); 
-                    const hasKeyword = tokens.some(t => f.csv.includes(t));
-                    const hasBimestre = h.includes('IV') || h.includes('4') || h.includes(' IV');
-                    return hasKeyword && hasBimestre;
-                });
+                    if (tokens.some(t => f.csv.includes(t)) && (h.includes('IV') || h.includes('4'))) return true;
+                    
+                    // 2. Loose Contains Matching (For stubborn columns like DPCYC)
+                    // We only use this if the keyword is long enough to avoid false positives (like 'C')
+                    const isLongKeyword = f.csv.some(k => k.length > 2);
+                    if (isLongKeyword && f.csv.some(k => h.includes(k))) return true;
 
-                if (idx === -1 && f.key !== 'c' && f.key !== 'cs') {
-                     idx = headersNorm.findIndex(h => f.csv.some(k => h.includes(k)));
-                }
+                    return false;
+                });
                 
                 subjectCols[f.key] = idx;
                 if(idx === -1) missingSubjects.push(f.label);
@@ -584,12 +594,15 @@
             }).filter(s => s !== null);
 
             if (newStudents.length > 0) {
+                // Update Cache
                 state.dataCache[state.activeGradeId] = newStudents;
+                
                 renderGradeData(newStudents);
                 
                 // DIAGNOSTIC ALERT
                 if(missingSubjects.length > 0) {
-                    alert(`⚠️ ADVERTENCIA: No se encontraron las columnas para:\n- ${missingSubjects.join('\n- ')}\n\nVerifique los nombres en su archivo.`);
+                    // Only alert if we haven't alerted for this grade recently to avoid spam
+                    console.warn(`Faltan columnas: ${missingSubjects.join(', ')}`);
                     updateStatus('syncing', 'Incompleto');
                 } else {
                     updateStatus('success', 'Conectado');
@@ -786,28 +799,40 @@
 
         async function fetchUrlData(url, isAutoLoad = false) {
             if(!isAutoLoad) document.getElementById('status-text').textContent = "Sincronizando...";
+            
+            // Auto-fix URL
             if (url.includes('docs.google.com/spreadsheets')) {
                 if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
                 else if (url.includes('/pubhtml')) url = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
             }
+
+            // RACE STRATEGY: Try all proxies at once for speed
             const strategies = [
-                (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-                (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-                (u) => u
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+                `https://corsproxy.io/?${encodeURIComponent(url)}`
             ];
-            let csvText = null;
-            for (const getUrl of strategies) {
-                try {
-                    const fetchUrl = getUrl(url);
-                    const response = await fetch(fetchUrl);
-                    if (response.ok) {
-                        csvText = await response.text();
-                        if (csvText && (csvText.includes(',') || csvText.includes('\n'))) break;
-                    }
-                } catch (e) { console.warn("Falló estrategia:", e); }
+
+            try {
+                // Try fetching from multiple sources in parallel, take first success
+                const response = await Promise.any(strategies.map(u => 
+                    fetch(u).then(res => {
+                        if (!res.ok) throw new Error('Status ' + res.status);
+                        return res.text();
+                    })
+                ));
+
+                Papa.parse(response, { 
+                    complete: processCSV, 
+                    error: () => { 
+                        if(!isAutoLoad) showStatus('Error CSV', 'error'); 
+                        showNoDataState("Error Formato"); 
+                    } 
+                });
+
+            } catch (error) {
+                if(!isAutoLoad) showStatus('Fallo de conexión', 'error');
+                showNoDataState("Error Conexión");
             }
-            if (csvText) Papa.parse(csvText, { complete: processCSV, error: () => { if(!isAutoLoad) showStatus('Error CSV', 'error'); showNoDataState("Error Formato"); } });
-            else { if(!isAutoLoad) showStatus('Fallo de conexión', 'error'); showNoDataState("Error Conexión"); }
         }
     </script>
 </body>
