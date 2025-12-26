@@ -3,568 +3,908 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BoletaTracker Pro | Modo Compatibilidad</title>
+    <title>BoletaTracker Pro | Monitor Académico 2025</title>
     
-    <!-- 1. Cargar Estilos -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- 2. Cargar Librerías Globales (UMD) - Versiones Estables -->
-    <!-- React Core (18.2.0) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Prop-Types (Requisito común para librerías UMD) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    <!-- PapaParse (CSV Logic) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     
-    <!-- Recharts (Versión 2.10.3 - Conocida por ser estable en UMD) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.min.js"></script>
-    
-    <!-- Babel para traducir JSX -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    
-    <!-- Iconos Lucide -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Firebase Compat -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Styles & Theme -->
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        :root {
+            --primary: #4F46E5; /* Indigo 600 */
+            --primary-dark: #4338ca;
+            --bg-body: #F8FAFC; /* Slate 50 */
+            --bg-card: #FFFFFF;
+            --text-main: #1E293B; /* Slate 800 */
+            --text-muted: #64748B; /* Slate 500 */
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); }
+        
+        .hide { display: none !important; }
+        
+        /* Smooth Transitions */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #loader-fallback {
-            position: fixed; inset: 0; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; background: #f8fafc; z-index: 50;
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        /* Matrix Table Styles */
+        .matrix-header {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            padding-bottom: 0.5rem;
+            text-align: left;
+            height: 140px; /* Aumentado para nombres largos */
+            font-size: 0.7rem;
+        }
+        
+        .nav-active {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        .nav-inactive {
+            color: var(--text-muted);
+        }
+        .nav-inactive:hover {
+            background-color: #F1F5F9; /* Slate 100 */
+            color: var(--text-main);
+        }
+
+        /* Grade Item Styles */
+        .grade-item {
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+        .grade-item.active {
+            background-color: #EEF2FF; /* Indigo 50 */
+            border-left-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .grade-item:hover:not(.active) {
+            background-color: #F8FAFC;
         }
     </style>
 </head>
-<body>
+<body class="flex h-screen overflow-hidden">
 
-    <!-- Loader Inicial -->
-    <div id="loader-fallback">
-        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-        <h2 class="text-slate-600 font-bold">Cargando BoletaTracker...</h2>
-        <p class="text-xs text-slate-400 mt-2">Versión v2.7 (Token Match Fix)</p>
-    </div>
-
-    <div id="root"></div>
-
-    <!-- Lógica de la Aplicación -->
-    <script type="text/babel">
-        // --- 1. Desempaquetar Librerías con Seguridad ---
-        const { useState, useEffect, useMemo, useRef } = React;
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="bg-white w-72 flex-col border-r border-slate-200 fixed inset-y-0 left-0 z-50 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none flex">
         
-        let RechartsLib = window.Recharts || {};
-        const { 
-            BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
-            ResponsiveContainer, PieChart, Pie, Cell 
-        } = RechartsLib;
-        
-        const CHARTS_AVAILABLE = !!(BarChart && PieChart);
-
-        // --- 2. Configuración Firebase ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCQsc2fyRC-JQYn8s4YzxPDYjh0DQ_xyoM",
-            authDomain: "revision-de-boletas.firebaseapp.com",
-            projectId: "revision-de-boletas",
-            storageBucket: "revision-de-boletas.firebasestorage.app",
-            messagingSenderId: "1031516186316",
-            appId: "1:1031516186316:web:218bfaca40369bf0b7c469",
-            measurementId: "G-XPMK46L6HY"
-        };
-
-        let app, auth, db;
-        try {
-            if (!firebase.apps.length) {
-                app = firebase.initializeApp(firebaseConfig);
-            } else {
-                app = firebase.app();
-            }
-            auth = firebase.auth();
-            db = firebase.firestore();
-            console.log("Firebase conectado correctamente.");
-        } catch (error) {
-            console.error("Error Firebase:", error);
-        }
-
-        // --- 3. Componente de Iconos (Safe) ---
-        const Icon = ({ name, className = "", size = 20 }) => {
-            const wrapperRef = useRef(null);
-            useEffect(() => {
-                if (wrapperRef.current && window.lucide) {
-                    const i = document.createElement('i');
-                    i.setAttribute('data-lucide', name);
-                    i.setAttribute('class', className);
-                    i.setAttribute('width', size);
-                    i.setAttribute('height', size);
-                    wrapperRef.current.innerHTML = '';
-                    wrapperRef.current.appendChild(i);
-                    window.lucide.createIcons({
-                        root: wrapperRef.current,
-                        nameAttr: 'data-lucide',
-                        attrs: { class: className, width: size, height: size }
-                    });
-                }
-            }, [name, className, size]);
-            return <span ref={wrapperRef} style={{ display: 'inline-flex', verticalAlign: 'middle' }}></span>;
-        };
-
-        const GRADES_STRUCTURE = [
-            { level: 'INICIAL', icon: 'baby', grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5'] },
-            { level: 'PRIMARIA', icon: 'book-open', grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P'] },
-            { level: 'SECUNDARIA', icon: 'school', grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
-        ];
-
-        // --- CONFIGURACIÓN DE COLUMNAS ACTUALIZADA ---
-        const SUBJECT_FIELDS = [
-            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
-            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
-            { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
-            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
-            // Aseguramos DCPYC y sus variantes
-            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA'] }, 
-            // CS no debe confundirse con C
-            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
-            { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
-            { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
-            // Aseguramos CYT
-            { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
-            { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION', 'RELIGIÓN'] },
-            { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
-            { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
-            // C es Conducta
-            { key: 'c', label: 'Conducta', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] },
-            { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] }
-        ];
-
-        // --- Componentes UI ---
-        const Sidebar = ({ currentGrade, onSelectGrade, isOpen, onClose }) => (
-            <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col`}>
-                <div className="p-6 border-b border-slate-100 relative">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
-                            <Icon name="layout-dashboard" className="text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-slate-900">BoletaTracker</h1>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Pro 2025</span>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="absolute top-6 right-4 md:hidden text-slate-400">
-                        <Icon name="x" />
-                    </button>
+        <!-- Brand -->
+        <div class="p-6 border-b border-slate-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i>
                 </div>
-                <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
-                    {GRADES_STRUCTURE.map((levelGroup) => (
-                        <div key={levelGroup.level}>
-                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">
-                                <Icon name={levelGroup.icon} size={16} />
-                                {levelGroup.level}
-                            </div>
-                            <ul className="space-y-1">
-                                {levelGroup.grades.map((grade) => (
-                                    <li key={grade}>
-                                        <button
-                                            onClick={() => { onSelectGrade(grade); onClose(); }}
-                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${
-                                                currentGrade === grade 
-                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                            }`}
-                                        >
-                                            {grade}
-                                            {currentGrade === grade && <div className="w-2 h-2 rounded-full bg-white" />}
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </nav>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-slate-900">BoletaTracker</h1>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Pro 2025</span>
+                </div>
             </div>
-        );
+        </div>
 
-        const DashboardStats = ({ students }) => {
-            const stats = useMemo(() => {
-                const totalSlots = students.length * SUBJECT_FIELDS.length;
-                let totalFilled = 0;
-                const subjectCounts = SUBJECT_FIELDS.map(sub => {
-                    const count = students.filter(s => s[sub.key]).length;
-                    totalFilled += count;
-                    return { name: sub.label, count, color: sub.color };
-                });
-                const totalPending = totalSlots - totalFilled;
-                const percent = totalSlots > 0 ? Math.round((totalFilled / totalSlots) * 100) : 0;
+        <!-- Navigation Menu -->
+        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            
+            <!-- Vistas Principales -->
+            <div class="px-2 mb-6">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">Vistas</p>
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all nav-active mb-1">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchView('matrix')" id="nav-matrix" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all nav-inactive">
+                    <i data-lucide="grid" class="w-4 h-4"></i>
+                    <span>Matriz</span>
+                </button>
+            </div>
 
-                return {
-                    totalStudents: students.length,
-                    progress: percent,
-                    missing: totalPending,
-                    evaluatedFields: SUBJECT_FIELDS.length,
-                    subjectCounts,
-                    donutData: [
-                        { name: 'Completado', value: totalFilled, color: '#4F46E5' },
-                        { name: 'Pendiente', value: totalPending, color: '#EF4444' }
-                    ]
-                };
-            }, [students]);
+            <!-- Menú de Grados (Generado Dinámicamente) -->
+            <div id="grades-menu-container">
+                <!-- Se llena con JS -->
+            </div>
 
-            if (students.length === 0) {
-                return (
-                    <div className="flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed m-6">
-                        <div className="opacity-20 mb-4"><Icon name="database" size={64} /></div>
-                        <h3 className="text-lg font-bold text-slate-600">Sin Datos Conectados</h3>
-                        <p className="max-w-md text-center mt-2 px-6">Este grado no tiene datos. Usa el botón "Conectar Drive" arriba.</p>
+            <div class="px-4 mt-6">
+                <!-- Connection Status -->
+                <div id="connection-status" class="px-3 py-2 mb-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-2">
+                    <div class="relative flex-shrink-0">
+                        <div class="w-2 h-2 rounded-full bg-slate-400" id="status-dot"></div>
+                        <div class="w-2 h-2 rounded-full bg-slate-400 animate-ping absolute top-0 left-0 hide" id="status-ping"></div>
                     </div>
-                );
-            }
-
-            return (
-                <div className="space-y-6 animate-fade-in p-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800">Resumen General - IV Bimestre</h2>
-                        <p className="text-slate-500 text-sm mt-1">Monitoreo de {stats.evaluatedFields} campos.</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
-                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Estudiantes</p><h3 className="text-3xl font-bold mt-2 text-slate-800">{stats.totalStudents}</h3></div>
-                            <div className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon name="users" /></div>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
-                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Avance</p><h3 className="text-3xl font-bold mt-2 text-indigo-600">{stats.progress}%</h3></div>
-                            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600"><Icon name="pie-chart" /></div>
-                        </div>
-                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
-                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Faltantes</p><h3 className="text-3xl font-bold mt-2 text-red-500">{stats.missing}</h3></div>
-                            <div className="p-2 rounded-lg bg-red-50 text-red-500"><Icon name="alert-circle" /></div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {CHARTS_AVAILABLE ? (
-                        <>
-                            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[400px]">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4">Detalle por Campo</h3>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={stats.subjectCounts}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} interval={0} tick={{fontSize: 10}} />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                            {stats.subjectCounts.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                            
-                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
-                                <h3 className="text-lg font-bold text-slate-800 mb-2">Progreso Total</h3>
-                                <div className="h-64 w-full relative">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <PieChart>
-                                            <Pie data={stats.donutData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                                                {stats.donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                                            </Pie>
-                                            <Tooltip />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <span className="text-3xl font-bold text-slate-800">{stats.progress}%</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                        ) : (
-                            <div className="lg:col-span-3 p-12 text-center text-slate-400 bg-white border border-dashed rounded-xl">
-                                <Icon name="alert-circle" className="mx-auto mb-2" size={32} />
-                                <p>Gráficos no disponibles (Recharts Error)</p>
-                            </div>
-                        )}
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-medium text-slate-700 truncate" id="status-text">Sin datos</p>
                     </div>
                 </div>
-            );
-        };
 
-        const MatrixTable = ({ students }) => {
-            const [filterEmpty, setFilterEmpty] = useState(false);
-            const [search, setSearch] = useState('');
+                <button onclick="openModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm">
+                    <i data-lucide="database" class="w-3 h-3"></i>
+                    <span>Conectar Datos</span>
+                </button>
+            </div>
+        </nav>
 
-            const filtered = useMemo(() => students.filter(s => {
-                const match = s.name.toLowerCase().includes(search.toLowerCase());
-                if(!match) return false;
-                if(filterEmpty) return SUBJECT_FIELDS.some(f => !s[f.key]);
-                return true;
-            }), [students, search, filterEmpty]);
+        <!-- Footer (Current Grade Info) -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs border border-indigo-200" id="footer-grade-badge">
+                    -
+                </div>
+                <div class="min-w-0">
+                    <p class="text-xs font-bold text-slate-700 truncate" id="footer-grade-name">Seleccione Grado</p>
+                    <p class="text-[10px] text-slate-500 truncate" id="footer-grade-level">Sistema Escolar</p>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-            return (
-                <div className="p-6 space-y-6 animate-fade-in">
-                    <div className="flex flex-col md:flex-row justify-between gap-4">
+    <!-- MAIN CONTENT WRAPPER -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- Mobile Header -->
+        <header class="h-16 bg-white border-b border-slate-200 flex md:hidden items-center justify-between px-4 z-40 flex-shrink-0">
+            <button onclick="toggleSidebar()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <span class="font-bold text-slate-800 truncate" id="mobile-header-title">BoletaTracker</span>
+            <div class="w-8"></div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-auto bg-slate-50 p-4 md:p-8 relative" id="main-scroll">
+            
+            <!-- Empty State (No Data for Grade) -->
+            <div id="no-data-state" class="hidden absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-10 p-6 text-center">
+                <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                    <i data-lucide="folder-open" class="w-8 h-8 text-slate-300"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-700">Sin datos para <span id="empty-state-grade">este grado</span></h3>
+                <p class="text-sm text-slate-500 max-w-xs mx-auto mt-1 mb-6">Conecta una hoja de cálculo de Google Drive para visualizar el reporte.</p>
+                <button onclick="openModal()" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center gap-2">
+                    <i data-lucide="link" class="w-4 h-4"></i> Conectar Drive
+                </button>
+            </div>
+
+            <!-- VIEW: DASHBOARD -->
+            <div id="view-dashboard" class="fade-in max-w-full mx-auto space-y-6">
+                
+                <!-- Introduction -->
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800" id="dash-title">Resumen General</h2>
+                    <p class="text-slate-500 text-sm mt-1">
+                        Monitoreo de 14 campos (Áreas, Competencias Transversales, Conducta y Comentarios).
+                    </p>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Total Students -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-800">Matriz de Control</h2>
-                            <p className="text-slate-500 text-sm">Vista detallada por estudiante</p>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Estudiantes</p>
+                            <h3 class="text-3xl font-bold text-slate-800 mt-2" id="kpi-total">0</h3>
                         </div>
-                        <div className="flex gap-3">
-                            <input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} 
-                                className="border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            <button onClick={()=>setFilterEmpty(!filterEmpty)} className={`px-4 py-2 border rounded-lg text-sm font-bold flex items-center gap-2 ${filterEmpty ? 'bg-indigo-50 text-indigo-600' : 'bg-white'}`}>
-                                <Icon name="filter" size={16} /> Faltantes
-                            </button>
-                        </div>
+                        <div class="p-2 bg-slate-100 rounded-lg text-slate-600"><i data-lucide="users" class="w-5 h-5"></i></div>
                     </div>
                     
-                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <!-- Progress % -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avance Global</p>
+                            <h3 class="text-3xl font-bold text-indigo-600 mt-2" id="kpi-progress">0%</h3>
+                        </div>
+                        <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600"><i data-lucide="pie-chart" class="w-5 h-5"></i></div>
+                    </div>
+
+                    <!-- Pending Cells -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Celdas Vacías</p>
+                            <h3 class="text-3xl font-bold text-red-500 mt-2" id="kpi-missing">0</h3>
+                        </div>
+                        <div class="p-2 bg-red-50 rounded-lg text-red-500"><i data-lucide="alert-circle" class="w-5 h-5"></i></div>
+                    </div>
+
+                    <!-- Active Fields -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campos Evaluados</p>
+                            <h3 class="text-3xl font-bold text-emerald-600 mt-2">14</h3>
+                        </div>
+                        <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Main Bar Chart -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-slate-800">Estado de Llenado por Campo</h3>
+                            <span class="px-2 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded">IV Bimestre</span>
+                        </div>
+                        <div class="flex-1 w-full min-h-[350px]">
+                            <div class="chart-container">
+                                <canvas id="subjectsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Side Donut & Summary -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                        <h3 class="text-lg font-bold text-slate-800 mb-2">Progreso Total</h3>
+                        <p class="text-xs text-slate-500 mb-6">Porcentaje de celdas llenas vs vacías.</p>
+                        
+                        <div class="flex-1 flex items-center justify-center relative min-h-[200px]">
+                            <div class="chart-container" style="height: 220px;">
+                                <canvas id="globalDonut"></canvas>
+                            </div>
+                            <!-- Centered Text Overlay -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-3xl font-bold text-slate-800" id="donut-percent">0%</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 space-y-3">
+                            <div class="flex justify-between text-sm p-3 bg-slate-50 rounded-lg">
+                                <span class="flex items-center gap-2 text-slate-600"><div class="w-2 h-2 rounded-full bg-indigo-500"></div> Completado</span>
+                                <span class="font-bold text-slate-800" id="stat-filled">0</span>
+                            </div>
+                            <div class="flex justify-between text-sm p-3 bg-red-50 rounded-lg">
+                                <span class="flex items-center gap-2 text-slate-600"><div class="w-2 h-2 rounded-full bg-red-500"></div> Pendiente</span>
+                                <span class="font-bold text-red-600" id="stat-pending">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: MATRIX -->
+            <div id="view-matrix" class="fade-in max-w-full mx-auto space-y-6 hide">
+                
+                <!-- Intro & Filters -->
+                <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Matriz de Control Completa</h2>
+                        <p class="text-slate-500 text-sm mt-1">Incluye Áreas, Competencias Transversales, Conducta y Comentarios.</p>
+                    </div>
+                    
+                    <div class="flex gap-3 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="search-student" placeholder="Buscar estudiante..." class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+                        </div>
+                        <button onclick="toggleEmptyOnly()" id="btn-filter-empty" class="px-4 py-2 bg-white border border-slate-300 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2">
+                            <i data-lucide="filter" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Solo Faltantes</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Matrix Table -->
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
-                                    <th className="px-4 py-3 sticky left-0 bg-slate-50">Estudiante</th>
-                                    {SUBJECT_FIELDS.map(f => (
-                                        <th key={f.key} className="px-2 py-3 text-center border-l border-slate-100"><div className="whitespace-nowrap writing-mode-vertical" style={{writingMode:'vertical-rl', transform:'rotate(180deg)', margin:'0 auto'}}>{f.label}</div></th>
-                                    ))}
+                                <tr class="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <th class="px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10">ID</th>
+                                    <th class="px-2 py-4 w-16 text-center border-r border-slate-100">Hoja</th>
+                                    <th class="px-4 py-4 min-w-[250px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10">Apellidos y Nombres</th>
+                                    <!-- Dynamic Headers -->
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Matemática</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Comunicación</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Inglés</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Arte y Cult.</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">DPCYC</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ciencias Soc.</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ed. Física</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">EPT</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Ciencia y Tec.</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-indigo-50/30"><div class="matrix-header">Religión</div></th>
+                                    <!-- Nuevos Campos -->
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-amber-50/30"><div class="matrix-header">Comp. Transv. 1</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-amber-50/30"><div class="matrix-header">Comp. Transv. 2</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-emerald-50/30"><div class="matrix-header">Conducta (C)</div></th>
+                                    <th class="px-2 align-bottom border-r border-slate-100 bg-slate-100/50"><div class="matrix-header">Comentario G.</div></th>
                                 </tr>
                             </thead>
-                            <tbody className="text-sm divide-y divide-slate-100">
-                                {filtered.map(s => (
-                                    <tr key={s.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-2 font-medium sticky left-0 bg-white">{s.name}</td>
-                                        {SUBJECT_FIELDS.map(f => (
-                                            <td key={f.key} className={`px-1 py-2 text-center border-l border-slate-50 ${s[f.key] ? 'bg-emerald-50/50' : 'bg-red-50/30'}`}>
-                                                {s[f.key] ? <span className="text-emerald-500">✓</span> : <span className="text-red-400">✗</span>}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                                {filtered.length === 0 && <tr><td colSpan="15" className="p-8 text-center text-slate-400">No hay datos</td></tr>}
+                            <tbody id="matrix-body" class="divide-y divide-slate-100 text-sm">
+                                <!-- Populated by JS -->
                             </tbody>
                         </table>
                     </div>
-                </div>
-            );
-        };
-
-        const ConnectionModal = ({ isOpen, onClose, onSync, currentUrl }) => {
-            const [url, setUrl] = useState(currentUrl || '');
-            const [isSyncing, setIsSyncing] = useState(false);
-            useEffect(() => { setUrl(currentUrl || ''); }, [currentUrl]);
-            if(!isOpen) return null;
-            const handleSyncClick = async () => {
-                setIsSyncing(true);
-                await onSync(url);
-                setIsSyncing(false);
-            };
-            return (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Icon name="database" className="text-indigo-600"/> Conectar Drive</h3>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Enlace CSV</label>
-                        <input type="text" value={url} onChange={e=>setUrl(e.target.value)} className="w-full border p-3 rounded-xl mb-4 text-sm" placeholder="https://...output=csv" />
-                        <div className="flex justify-end gap-2">
-                            <button onClick={onClose} className="px-4 py-2 text-slate-600 text-sm font-bold">Cancelar</button>
-                            <button onClick={handleSyncClick} disabled={isSyncing} className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50">
-                                {isSyncing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="refresh-cw" size={16} />} 
-                                {isSyncing ? "Sincronizando..." : "Sincronizar"}
-                            </button>
+                    <!-- Empty State -->
+                    <div id="matrix-empty" class="hidden p-12 text-center">
+                        <div class="inline-flex p-4 bg-slate-50 rounded-full mb-4">
+                            <i data-lucide="search-x" class="w-8 h-8 text-slate-400"></i>
                         </div>
+                        <h3 class="text-slate-900 font-bold">No se encontraron resultados</h3>
+                        <p class="text-slate-500 text-sm">Intenta ajustar tus filtros de búsqueda o actualiza los datos.</p>
                     </div>
                 </div>
-            );
+            </div>
+
+        </div>
+    </main>
+
+    <!-- DATA CONNECTION MODAL -->
+    <div id="data-modal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 fade-in">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i>
+                    Conectar Datos: <span id="modal-grade-label" class="text-indigo-500">...</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-xs text-indigo-700">
+                    <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                    Este enlace se guardará solo para <strong><span id="modal-grade-target"></span></strong>.
+                </div>
+
+                <!-- Option 1: URL -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Opción A: Enlace de Google Drive</label>
+                    <div class="relative">
+                        <i data-lucide="link" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                        <input type="text" id="drive-url" placeholder="https://docs.google.com/spreadsheets/.../pub?output=csv" 
+                            class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow">
+                    </div>
+                </div>
+
+                <div class="relative flex items-center py-2">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium">O</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <!-- Option 2: File Upload -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Opción B: Subir Archivo CSV</label>
+                    <label class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:bg-slate-50 hover:border-indigo-400 transition-colors group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i data-lucide="upload-cloud" class="w-6 h-6 text-slate-400 group-hover:text-indigo-500 mb-2 transition-colors"></i>
+                            <p class="text-xs text-slate-500"><span class="font-bold text-slate-700">Clic para subir</span> .csv</p>
+                        </div>
+                        <input id="file-upload" type="file" class="hidden" accept=".csv" onchange="handleFileUpload(this)" />
+                    </label>
+                </div>
+
+                <!-- Status Msg -->
+                <div id="modal-msg" class="hidden p-3 rounded-lg text-xs font-medium text-center"></div>
+            </div>
+
+            <div class="p-4 bg-slate-50 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                <button onclick="handleUrlSync()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg shadow-md shadow-indigo-200 transition-all flex items-center gap-2">
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i> Sincronizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- 1. STATE & CONFIG ---
+        
+        // Estructura de Grados
+        const GRADES = {
+            'inicial': {
+                label: 'Inicial',
+                icon: 'baby',
+                levels: [
+                    { id: 'ini_3', name: '3 Años' },
+                    { id: 'ini_4', name: '4 Años' },
+                    { id: 'ini_5', name: '5 Años' }
+                ]
+            },
+            'primaria': {
+                label: 'Primaria',
+                icon: 'book-open',
+                levels: [
+                    { id: 'pri_1', name: '1° Primaria' },
+                    { id: 'pri_2', name: '2° Primaria' },
+                    { id: 'pri_3', name: '3° Primaria' },
+                    { id: 'pri_4', name: '4° Primaria' },
+                    { id: 'pri_5', name: '5° Primaria' },
+                    { id: 'pri_6', name: '6° Primaria' }
+                ]
+            },
+            'secundaria': {
+                label: 'Secundaria',
+                icon: 'graduation-cap',
+                levels: [
+                    { id: 'sec_1', name: '1° Secundaria' },
+                    { id: 'sec_2', name: '2° Secundaria' },
+                    { id: 'sec_3', name: '3° Secundaria' },
+                    { id: 'sec_4', name: '4° Secundaria' },
+                    { id: 'sec_5', name: '5° Secundaria' }
+                ]
+            }
         };
 
-        const App = () => {
-            const [user, setUser] = useState(null);
-            const [currentGrade, setCurrentGrade] = useState('INICIAL 3');
-            const [students, setStudents] = useState([]);
-            const [view, setView] = useState('dashboard');
-            const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-            const [isModalOpen, setIsModalOpen] = useState(false);
-            const [currentDriveUrl, setCurrentDriveUrl] = useState('');
-            const [lastUpdated, setLastUpdated] = useState(null);
+        let state = {
+            activeGradeId: 'sec_5', // Default
+            dataCache: {}, // { gradeId: { students: [], lastUpdated: date } }
+            urls: JSON.parse(localStorage.getItem('bt_urls')) || {},
+            filterEmpty: false,
+            charts: {}
+        };
 
-            useEffect(() => {
-                const unsub = auth.onAuthStateChanged(u => {
-                    if (u) setUser(u);
-                    else auth.signInAnonymously().catch(console.error);
+        // --- 2. INITIALIZATION & UI LOGIC ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSidebarMenu();
+            initCharts();
+            
+            // Search Listener
+            document.getElementById('search-student').addEventListener('input', (e) => {
+                renderMatrix(e.target.value);
+            });
+
+            // Initial Load
+            loadGrade(state.activeGradeId);
+        });
+
+        function renderSidebarMenu() {
+            const container = document.getElementById('grades-menu-container');
+            let html = '';
+
+            for (const [key, section] of Object.entries(GRADES)) {
+                html += `
+                    <div class="mb-2 mt-4 px-2">
+                        <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1">
+                            <i data-lucide="${section.icon}" class="w-3 h-3"></i> ${section.label}
+                        </div>
+                        <div class="space-y-0.5">
+                `;
+                
+                section.levels.forEach(level => {
+                    html += `
+                        <div onclick="loadGrade('${level.id}')" id="grade-btn-${level.id}" 
+                             class="grade-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-600 transition-all hover:bg-slate-50">
+                            <span>${level.name}</span>
+                            <span id="dot-${level.id}" class="w-1.5 h-1.5 rounded-full bg-slate-200"></span>
+                        </div>
+                    `;
                 });
-                return () => unsub();
-            }, []);
 
-            useEffect(() => {
-                if (!user) return;
-                const docRef = db.collection('grades').doc(currentGrade);
-                const unsub = docRef.onSnapshot(doc => {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        setStudents(data.students || []);
-                        setCurrentDriveUrl(data.driveUrl || '');
-                        setLastUpdated(data.lastUpdated ? new Date(data.lastUpdated) : null);
-                    } else {
-                        setStudents([]);
-                        setCurrentDriveUrl('');
-                    }
-                });
-                return () => unsub();
-            }, [user, currentGrade]);
+                html += `</div></div>`;
+            }
+            
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
 
-            const parseCSV = (text) => {
-                const lines = text.split(/\r\n|\n/);
-                const headers = lines[0].split(',').map(h => h.trim().toUpperCase().replace(/"/g,''));
-                const colMap = {
-                    name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
-                    hoja: headers.findIndex(h => h.includes('HOJA')),
-                };
-                if(colMap.name === -1) return [];
+        async function loadGrade(gradeId) {
+            // Update State
+            state.activeGradeId = gradeId;
+            
+            // UI Updates
+            document.querySelectorAll('.grade-item').forEach(el => el.classList.remove('active'));
+            const activeBtn = document.getElementById(`grade-btn-${gradeId}`);
+            if(activeBtn) activeBtn.classList.add('active');
 
-                // --- MEJORA: Búsqueda basada en Fichas (Tokens) ---
-                const normalize = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-                const headersNorm = headers.map(normalize);
-
-                const subjectCols = {};
-                SUBJECT_FIELDS.forEach(f => {
-                    let idx = headersNorm.findIndex(h => {
-                        // 1. Dividir el header en palabras/fichas (ej: "DCPYC_IV" -> ["DCPYC", "IV"])
-                        const tokens = h.split(/[^A-Z0-9]+/); 
-                        
-                        // 2. Verificar si ALGUNA ficha es exactamente la palabra clave
-                        const hasKeyword = tokens.some(t => f.csv.includes(t));
-                        
-                        // 3. Verificar bimestre
-                        const hasBimestre = h.includes('IV') || h.includes('4') || h.includes(' IV');
-                        
-                        return hasKeyword && hasBimestre;
-                    });
-                    
-                    subjectCols[f.key] = idx;
-                });
-                console.log("Columnas Detectadas:", subjectCols);
-
-                const result = [];
-                for(let i=1; i<lines.length; i++){
-                    if(!lines[i].trim()) continue;
-                    const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                    if(!row[colMap.name]) continue;
-
-                    const student = {
-                        id: i,
-                        name: row[colMap.name].replace(/"/g,''),
-                        hoja: row[colMap.hoja] ? row[colMap.hoja].replace(/"/g,'') : '',
-                    };
-
-                    SUBJECT_FIELDS.forEach(f => {
-                        const idx = subjectCols[f.key];
-                        if(idx > -1 && row[idx]) {
-                            const val = row[idx].replace(/"/g,'').trim().toUpperCase();
-                            student[f.key] = (val !== '' && val !== 'FALSE' && val !== '-');
-                        } else {
-                            student[f.key] = false;
-                        }
-                    });
-                    result.push(student);
+            // Find Grade Name & Level
+            let gradeName = "Desconocido";
+            let levelLabel = "Sistema";
+            for(const [key, section] of Object.entries(GRADES)){
+                const found = section.levels.find(l => l.id === gradeId);
+                if(found) {
+                    gradeName = found.name;
+                    levelLabel = section.label;
+                    break;
                 }
-                return result;
+            }
+
+            // Update Headers & Titles
+            document.getElementById('footer-grade-badge').textContent = gradeName.charAt(0);
+            document.getElementById('footer-grade-name').textContent = gradeName;
+            document.getElementById('footer-grade-level').textContent = levelLabel;
+            document.getElementById('dash-title').textContent = `Resumen: ${gradeName}`;
+            document.getElementById('mobile-header-title').textContent = gradeName;
+            
+            // Check Data
+            const gradeUrl = state.urls[gradeId];
+            
+            // 1. Limpiar vista
+            clearView();
+
+            if (state.dataCache[gradeId]) {
+                // Datos ya en memoria
+                renderGradeData(state.dataCache[gradeId]);
+            } else if (gradeUrl) {
+                // Tenemos URL, intentar descargar
+                updateStatus('syncing', 'Sincronizando...');
+                await fetchUrlData(gradeUrl, true); // true = isAutoLoad
+            } else {
+                // No hay datos ni URL
+                showNoDataState(gradeName);
+            }
+        }
+
+        function clearView() {
+            document.getElementById('no-data-state').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hide');
+            document.getElementById('kpi-total').textContent = '0';
+            updateCharts([], []); // Reset charts
+            renderMatrix();
+        }
+
+        function showNoDataState(gradeName) {
+            document.getElementById('no-data-state').classList.remove('hidden');
+            document.getElementById('empty-state-grade').textContent = gradeName;
+            updateStatus('empty', 'Sin datos');
+            
+            // En modo "sin datos", los gráficos se vacían
+            updateCharts([], []);
+        }
+
+        function updateStatus(type, text) {
+            const dot = document.getElementById('status-dot');
+            const ping = document.getElementById('status-ping');
+            const txt = document.getElementById('status-text');
+            const navDot = document.getElementById(`dot-${state.activeGradeId}`);
+
+            txt.textContent = text;
+
+            if (type === 'success') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500";
+                ping.classList.remove('hide');
+                ping.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute top-0 left-0";
+                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-500";
+            } else if (type === 'syncing') {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500";
+                ping.classList.add('hide');
+                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-amber-500";
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-slate-300";
+                ping.classList.add('hide');
+                if(navDot) navDot.className = "w-1.5 h-1.5 rounded-full bg-slate-200";
+            }
+        }
+
+        // --- 3. DATA LOGIC (CSV Processing) ---
+
+        function processCSV(results) {
+            if (!results.data || results.data.length === 0) return;
+
+            const rows = results.data;
+            const headers = rows[0].map(h => h.toUpperCase().trim());
+            const findCol = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
+
+            const colMap = {
+                name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
+                hoja: headers.findIndex(h => h.includes('HOJA') || h.includes('TOMAR COMO REFERENCIA') || h.includes('ID')),
+                mat: findCol(['MAT_IV']),
+                com: findCol(['COM_IV']),
+                ing: findCol(['ING_IV']),
+                art: findCol(['ART_IV', 'CUL_IV']),
+                dpc: findCol(['DCPCY_IV', 'DPCYC_IV', 'DPCC_IV']),
+                soc: findCol(['CS_IV', 'SOC_IV']),
+                ef:  findCol(['EF_IV']),
+                ept: findCol(['EPT_IV']),
+                cyt: findCol(['CYT_IV', 'CT_IV', 'CIENCIA_IV']),
+                rel: findCol(['ER_IV', 'REL_IV']),
+                trans1: findCol(['TRANS1_IV']),
+                trans2: findCol(['TRANS2_IV']),
+                cg: findCol(['CG_IV']), 
+                c: findCol(['C_IV'])
             };
 
-            const handleSync = async (url) => {
-                if(!url) return;
-                const fetchWithProxy = async (proxyUrl) => {
-                    const controller = new AbortController();
-                    const id = setTimeout(() => controller.abort(), 10000);
-                    try {
-                        const res = await fetch(proxyUrl, { signal: controller.signal });
-                        clearTimeout(id);
-                        if(!res.ok) throw new Error(`HTTP ${res.status}`);
-                        return await res.text();
-                    } catch(e) {
-                        clearTimeout(id);
-                        throw e;
-                    }
+            const newStudents = rows.slice(1).map((row, idx) => {
+                if (!row[colMap.name]) return null;
+                const isFilled = (colIdx) => {
+                    if (colIdx === -1) return false;
+                    const val = row[colIdx];
+                    if (!val) return false;
+                    const cleanVal = val.toString().trim().toUpperCase();
+                    return cleanVal !== '' && cleanVal !== 'FALSE' && !cleanVal.includes('#DIV') && cleanVal !== '-';
                 };
 
+                return {
+                    id: idx + 1,
+                    hoja: colMap.hoja !== -1 ? (row[colMap.hoja] || `N${idx+1}`) : `N${idx+1}`,
+                    name: row[colMap.name],
+                    mat: isFilled(colMap.mat),
+                    com: isFilled(colMap.com),
+                    ing: isFilled(colMap.ing),
+                    art: isFilled(colMap.art),
+                    dpc: isFilled(colMap.dpc),
+                    soc: isFilled(colMap.soc),
+                    ef:  isFilled(colMap.ef),
+                    ept: isFilled(colMap.ept),
+                    cyt: isFilled(colMap.cyt),
+                    rel: isFilled(colMap.rel),
+                    trans1: isFilled(colMap.trans1),
+                    trans2: isFilled(colMap.trans2),
+                    cg: isFilled(colMap.cg),
+                    c: isFilled(colMap.c)
+                };
+            }).filter(s => s !== null);
+
+            if (newStudents.length > 0) {
+                // Save to Cache
+                state.dataCache[state.activeGradeId] = newStudents;
+                
+                // Render
+                renderGradeData(newStudents);
+                
+                updateStatus('success', 'Conectado');
+                closeModal();
+            } else {
+                showStatus('Error: CSV vacío o formato incorrecto', 'error');
+            }
+        }
+
+        function renderGradeData(students) {
+            document.getElementById('no-data-state').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('hide');
+            
+            // Temporary set state.students for legacy render functions
+            state.students = students; 
+            
+            updateUI(); // Calls renderDashboard & renderMatrix
+        }
+
+        // --- 4. RENDERERS (Reused from previous code, simplified) ---
+
+        function updateUI() {
+            renderDashboard();
+            renderMatrix();
+        }
+
+        function renderDashboard() {
+            const s = state.students || [];
+            if(s.length === 0) return;
+
+            const subjects = ['mat','com','ing','art','dpc','soc','ef','ept','cyt','rel','trans1','trans2','c','cg'];
+            
+            document.getElementById('kpi-total').textContent = s.length;
+
+            const totalSlots = s.length * subjects.length;
+            const totalFilled = s.reduce((acc, stu) => acc + subjects.reduce((a, sub) => a + (stu[sub] ? 1 : 0), 0), 0);
+            const totalPending = totalSlots - totalFilled;
+            const percent = totalSlots > 0 ? Math.round((totalFilled / totalSlots) * 100) : 0;
+
+            document.getElementById('kpi-progress').textContent = `${percent}%`;
+            document.getElementById('kpi-missing').textContent = totalPending;
+            document.getElementById('donut-percent').textContent = `${percent}%`;
+            document.getElementById('stat-filled').textContent = totalFilled;
+            document.getElementById('stat-pending').textContent = totalPending;
+
+            updateCharts(s, subjects);
+        }
+
+        function renderMatrix(searchTerm = '') {
+            const tbody = document.getElementById('matrix-body');
+            const term = searchTerm.toLowerCase();
+            const subjects = ['mat','com','ing','art','dpc','soc','ef','ept','cyt','rel','trans1','trans2','c','cg'];
+            const s = state.students || [];
+
+            const filtered = s.filter(stu => {
+                const matchesName = stu.name.toLowerCase().includes(term) || stu.hoja.toLowerCase().includes(term);
+                if (!matchesName) return false;
+                if (state.filterEmpty) return subjects.some(sub => !stu[sub]);
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                document.getElementById('matrix-empty').classList.remove('hidden');
+                tbody.innerHTML = '';
+                return;
+            }
+            
+            document.getElementById('matrix-empty').classList.add('hidden');
+
+            const renderCell = (filled) => filled 
+                ? `<td class="px-1 py-2 border-r border-slate-50 bg-emerald-50/50 text-center"><div class="mx-auto w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center"><i data-lucide="check" class="w-3 h-3 text-emerald-600"></i></div></td>`
+                : `<td class="px-1 py-2 border-r border-slate-50 bg-red-50/30 text-center group-hover:bg-red-50"><div class="mx-auto w-5 h-5 rounded-full bg-red-50 border border-red-100 flex items-center justify-center"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></div></td>`;
+
+            tbody.innerHTML = filtered.map(stu => `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 group">
+                    <td class="px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10">${String(stu.id).padStart(2,'0')}</td>
+                    <td class="px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100">${stu.hoja}</td>
+                    <td class="px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10">${stu.name}</td>
+                    ${renderCell(stu.mat)} ${renderCell(stu.com)} ${renderCell(stu.ing)} ${renderCell(stu.art)}
+                    ${renderCell(stu.dpc)} ${renderCell(stu.soc)} ${renderCell(stu.ef)} ${renderCell(stu.ept)}
+                    ${renderCell(stu.cyt)} ${renderCell(stu.rel)} ${renderCell(stu.trans1)} ${renderCell(stu.trans2)}
+                    ${renderCell(stu.c)} ${renderCell(stu.cg)}
+                </tr>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        // --- 5. CHART CONFIGURATION ---
+
+        function initCharts() {
+            const ctxSubjects = document.getElementById('subjectsChart').getContext('2d');
+            state.charts.bar = new Chart(ctxSubjects, {
+                type: 'bar',
+                data: {
+                    labels: ['Matemática', 'Comunic.', 'Inglés', 'Arte', 'DPCYC', 'Sociales', 'Ed. Fís.', 'EPT', 'CyT', 'Religión', 'Transv 1', 'Transv 2', 'Conducta', 'Comentario'],
+                    datasets: [{
+                        label: 'Boletas Llenas', data: [],
+                        backgroundColor: (ctx) => {
+                            const idx = ctx.dataIndex;
+                            if (idx === 12) return '#10B981';
+                            if (idx === 13) return '#64748B';
+                            return idx >= 10 ? '#F59E0B' : '#4F46E5';
+                        },
+                        borderRadius: 4, barPercentage: 0.7
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter' } } }, x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 } } } }
+            });
+
+            const ctxGlobal = document.getElementById('globalDonut').getContext('2d');
+            state.charts.donut = new Chart(ctxGlobal, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completado', 'Pendiente'],
+                    datasets: [{ data: [0, 100], backgroundColor: ['#4F46E5', '#EF4444'], borderWidth: 0, hoverOffset: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateCharts(students, subjects) {
+            if(students.length === 0) {
+                state.charts.bar.data.datasets[0].data = [];
+                state.charts.bar.update();
+                state.charts.donut.data.datasets[0].data = [0, 1];
+                state.charts.donut.update();
+                return;
+            }
+            const dataCounts = subjects.map(sub => students.filter(s => s[sub]).length);
+            state.charts.bar.data.datasets[0].data = dataCounts;
+            state.charts.bar.options.scales.y.max = students.length;
+            state.charts.bar.update();
+
+            const totalFilled = dataCounts.reduce((a, b) => a + b, 0);
+            const totalPending = (students.length * subjects.length) - totalFilled;
+            state.charts.donut.data.datasets[0].data = [totalFilled, totalPending];
+            state.charts.donut.update();
+        }
+
+        // --- 6. MODAL & SYNC HANDLERS ---
+
+        function openModal() {
+            document.getElementById('modal-grade-label').textContent = document.getElementById('footer-grade-name').textContent;
+            document.getElementById('modal-grade-target').textContent = document.getElementById('footer-grade-name').textContent;
+            
+            // Prefill URL if exists
+            document.getElementById('drive-url').value = state.urls[state.activeGradeId] || '';
+            
+            document.getElementById('data-modal').classList.remove('hidden'); 
+        }
+        function closeModal() { document.getElementById('data-modal').classList.add('hidden'); }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('modal-msg');
+            el.textContent = msg;
+            el.className = `p-3 rounded-lg text-xs font-medium text-center ${type === 'error' ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`;
+            el.classList.remove('hidden');
+        }
+
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            showStatus('Procesando archivo...', 'success');
+            Papa.parse(file, {
+                complete: processCSV,
+                error: () => showStatus('Error al leer el archivo', 'error')
+            });
+        }
+
+        async function handleUrlSync() {
+            let url = document.getElementById('drive-url').value.trim();
+            if (!url) { showStatus('URL inválida', 'error'); return; }
+
+            // Save URL to persistent storage
+            state.urls[state.activeGradeId] = url;
+            localStorage.setItem('bt_urls', JSON.stringify(state.urls));
+
+            await fetchUrlData(url);
+        }
+
+        async function fetchUrlData(url, isAutoLoad = false) {
+            if(!isAutoLoad) document.getElementById('status-text').textContent = "Sincronizando...";
+            
+            // Auto-fix Google Drive Links
+            if (url.includes('docs.google.com/spreadsheets')) {
+                if (url.includes('/edit')) {
+                    url = url.replace(/\/edit.*$/, '/export?format=csv');
+                } else if (url.includes('/pubhtml')) {
+                    url = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
+                }
+            }
+
+            const strategies = [
+                (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+                (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+                (u) => u
+            ];
+
+            let csvText = null;
+
+            for (const getUrl of strategies) {
                 try {
-                    let cleanUrl = url;
-                    if (url.includes('/edit')) {
-                        cleanUrl = url.replace(/\/edit.*$/, '/export?format=csv');
-                    } else if (url.includes('/pubhtml')) {
-                        cleanUrl = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
+                    const fetchUrl = getUrl(url);
+                    console.log("Conectando:", fetchUrl);
+                    const response = await fetch(fetchUrl);
+                    if (response.ok) {
+                        csvText = await response.text();
+                        if (csvText && (csvText.includes(',') || csvText.includes('\n'))) break;
                     }
+                } catch (e) { console.warn("Falló estrategia:", e); }
+            }
 
-                    let txt = "";
-                    try {
-                        txt = await fetchWithProxy(`https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`);
-                    } catch (e1) {
-                        try {
-                            txt = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(cleanUrl)}`);
-                        } catch (e2) {
-                            throw new Error("No se pudo conectar. Verifica que el enlace sea 'Público en la web'.");
-                        }
+            if (csvText) {
+                Papa.parse(csvText, {
+                    complete: processCSV,
+                    error: () => {
+                        if(!isAutoLoad) showStatus('Error CSV', 'error');
+                        showNoDataState("Error Formato");
                     }
-                    
-                    const data = parseCSV(txt);
-                    
-                    if(data.length > 0) {
-                        await db.collection('grades').doc(currentGrade).set({
-                            students: data,
-                            driveUrl: url,
-                            lastUpdated: new Date().toISOString()
-                        });
-                        setIsModalOpen(false);
-                        alert(`¡Éxito! Se cargaron ${data.length} estudiantes.`);
-                    } else {
-                        alert("Error: El archivo CSV parece vacío o faltan las columnas 'ESTUDIANTE'/'HOJA'.");
-                    }
-                } catch(e) {
-                    alert("Error sincronizando: " + e.message);
+                });
+            } else {
+                if(!isAutoLoad) showStatus('Fallo de conexión. Verifica que sea público.', 'error');
+                showNoDataState("Error Conexión");
+            }
+        }
+
+        // View Switcher (Helper)
+        function switchView(viewName) {
+            ['dashboard', 'matrix'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`nav-${v}`);
+                if (v === viewName) {
+                    el.classList.remove('hide');
+                    btn.classList.add('nav-active');
+                    btn.classList.remove('nav-inactive');
+                } else {
+                    el.classList.add('hide');
+                    btn.classList.remove('nav-active');
+                    btn.classList.add('nav-inactive');
                 }
-            };
+            });
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('-translate-x-full');
+        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-            return (
-                <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-                    {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={()=>setIsSidebarOpen(false)} />}
-                    <Sidebar currentGrade={currentGrade} onSelectGrade={setCurrentGrade} isOpen={isSidebarOpen} onClose={()=>setIsSidebarOpen(false)} />
-                    
-                    <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-30">
-                            <div className="flex items-center gap-4">
-                                <button className="md:hidden" onClick={()=>setIsSidebarOpen(true)}><Icon name="menu" /></button>
-                                <div>
-                                    <h2 className="text-xl font-bold">{currentGrade}</h2>
-                                    <span className="text-xs text-slate-500">{lastUpdated ? 'Actualizado: ' + lastUpdated.toLocaleTimeString() : 'Desconectado'}</span>
-                                </div>
-                            </div>
-                            <button onClick={()=>setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-xs font-bold hover:bg-slate-50">
-                                <Icon name="database" size={14} /> <span className="hidden md:inline">Conectar Drive</span>
-                            </button>
-                        </header>
-
-                        <div className="px-6 pt-6 pb-2">
-                             <div className="flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit">
-                                <button onClick={()=>setView('dashboard')} className={`px-4 py-2 rounded-lg text-sm font-medium flex gap-2 items-center ${view==='dashboard'?'bg-white shadow-sm':'text-slate-600'}`}>
-                                    <Icon name="layout-dashboard" size={16}/> Dashboard
-                                </button>
-                                <button onClick={()=>setView('matrix')} className={`px-4 py-2 rounded-lg text-sm font-medium flex gap-2 items-center ${view==='matrix'?'bg-white shadow-sm':'text-slate-600'}`}>
-                                    <Icon name="table" size={16}/> Matriz
-                                </button>
-                             </div>
-                        </div>
-
-                        <main className="flex-1 overflow-auto bg-slate-50">
-                            {view === 'dashboard' ? <DashboardStats students={students} /> : <MatrixTable students={students} />}
-                        </main>
-                    </div>
-
-                    <ConnectionModal isOpen={isModalOpen} onClose={()=>setIsModalOpen(false)} onSync={handleSync} currentUrl={currentDriveUrl} />
-                </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-        document.getElementById('loader-fallback').style.display = 'none';
     </script>
 </body>
 </html>
