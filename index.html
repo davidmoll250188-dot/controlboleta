@@ -3,109 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BoletaTracker Pro | Gestión Escolar</title>
+    <title>BoletaTracker Pro | Modo Compatibilidad</title>
     
-    <!-- Tailwind CSS -->
+    <!-- 1. Cargar Estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Fuente Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 2. Cargar Librerías Globales (UMD) - Versiones Estables -->
+    <!-- React Core (18.2.0) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- Prop-Types (Requisito común para librerías UMD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+    
+    <!-- Recharts (Versión 2.10.3 - Conocida por ser estable en UMD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.10.3/Recharts.min.js"></script>
+    
+    <!-- Babel para traducir JSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    
+    <!-- Iconos Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .recharts-wrapper { max-width: 100%; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-        
-        /* Estilo para el mensaje de error en pantalla */
-        #error-overlay {
-            display: none; position: fixed; inset: 0; background: #FFF0F0; 
-            z-index: 9999; padding: 2rem; overflow: auto;
+        #loader-fallback {
+            position: fixed; inset: 0; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; background: #f8fafc; z-index: 50;
         }
     </style>
-
-    <!-- Sistema de Diagnóstico de Errores (Se ejecuta antes que nada) -->
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            const overlay = document.getElementById('error-overlay');
-            const content = document.getElementById('error-content');
-            if (overlay && content) {
-                overlay.style.display = 'block';
-                content.innerHTML += `
-                    <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-                        <p class="font-bold">Error Detectado:</p>
-                        <p>${msg}</p>
-                        <p class="text-sm mt-2 text-red-500 font-mono">Línea: ${line} | Columna: ${col}</p>
-                        ${error ? `<pre class="mt-2 text-xs bg-white p-2 rounded border border-red-200 overflow-auto">${error.stack}</pre>` : ''}
-                    </div>
-                `;
-            }
-            return false;
-        };
-    </script>
-
-    <!-- Importmap -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom": "https://esm.sh/react-dom@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "lucide-react": "https://esm.sh/lucide-react@0.263.1",
-        "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
-      }
-    }
-    </script>
 </head>
 <body>
-    <!-- Contenedor Principal -->
-    <div id="root">
-        <!-- Pantalla de Carga Inicial (Se reemplaza cuando React carga) -->
-        <div class="h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-400">
-            <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-            <p class="font-medium animate-pulse">Iniciando BoletaTracker...</p>
-            <p class="text-xs mt-2 text-slate-300">Si esto tarda más de 5 segundos, verifica la consola.</p>
-        </div>
+
+    <!-- Loader Inicial -->
+    <div id="loader-fallback">
+        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+        <h2 class="text-slate-600 font-bold">Cargando BoletaTracker...</h2>
+        <p class="text-xs text-slate-400 mt-2">Versión Estable v2.4 (Smart Column Fix)</p>
     </div>
 
-    <!-- Overlay de Errores -->
-    <div id="error-overlay">
-        <h1 class="text-2xl font-bold text-red-600 mb-4">⚠️ Algo salió mal</h1>
-        <p class="text-slate-600 mb-6">Por favor, toma una captura de este error para solucionarlo.</p>
-        <div id="error-content"></div>
-    </div>
+    <div id="root"></div>
 
-    <script type="module">
-        import React, { useState, useEffect, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
+    <!-- Lógica de la Aplicación -->
+    <script type="text/babel">
+        // --- 1. Desempaquetar Librerías con Seguridad ---
+        const { useState, useEffect, useMemo, useRef } = React;
         
-        // Iconos
-        import { 
-            LayoutDashboard, Table, Database, Users, GraduationCap, 
-            Baby, School, BookOpen, Save, RefreshCw, CheckCircle2, 
-            AlertCircle, Menu, X, PieChart as PieIcon, LayoutGrid, 
-            Link as LinkIcon, Search, Filter, Check, X as XIcon, ArrowRight 
-        } from 'lucide-react';
-
-        // Firebase
-        import { initializeApp } from 'firebase/app';
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
-        import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-
-        // Gráficos
-        import { 
+        // Manejo seguro de Recharts por si la CDN falla o bloquea
+        let RechartsLib = window.Recharts || {};
+        const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
             ResponsiveContainer, PieChart, Pie, Cell 
-        } from 'recharts';
+        } = RechartsLib;
+        
+        const CHARTS_AVAILABLE = !!(BarChart && PieChart);
 
-        // --- CONFIGURACIÓN ---
-        let firebaseConfig = {
+        // --- 2. Configuración Firebase ---
+        const firebaseConfig = {
             apiKey: "AIzaSyCQsc2fyRC-JQYn8s4YzxPDYjh0DQ_xyoM",
             authDomain: "revision-de-boletas.firebaseapp.com",
             projectId: "revision-de-boletas",
@@ -115,90 +77,120 @@
             measurementId: "G-XPMK46L6HY"
         };
 
-        const isPreviewEnv = typeof __firebase_config !== 'undefined';
-        if (isPreviewEnv) { firebaseConfig = JSON.parse(__firebase_config); }
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "revision-de-boletas"; 
-
         // Inicializar Firebase
         let app, auth, db;
-        let firebaseInitialized = false;
-
         try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            firebaseInitialized = true;
-        } catch (e) {
-            console.error("Error iniciando Firebase:", e);
-            throw new Error("Fallo al conectar con Firebase: " + e.message);
+            if (!firebase.apps.length) {
+                app = firebase.initializeApp(firebaseConfig);
+            } else {
+                app = firebase.app();
+            }
+            auth = firebase.auth();
+            db = firebase.firestore();
+            console.log("Firebase conectado correctamente.");
+        } catch (error) {
+            console.error("Error Firebase:", error);
         }
 
-        // --- CONSTANTES ---
+        // --- 3. Componente de Iconos (React Safe Wrapper) ---
+        const Icon = ({ name, className = "", size = 20 }) => {
+            const wrapperRef = useRef(null);
+
+            useEffect(() => {
+                if (wrapperRef.current && window.lucide) {
+                    const i = document.createElement('i');
+                    i.setAttribute('data-lucide', name);
+                    i.setAttribute('class', className);
+                    i.setAttribute('width', size);
+                    i.setAttribute('height', size);
+                    
+                    wrapperRef.current.innerHTML = '';
+                    wrapperRef.current.appendChild(i);
+
+                    window.lucide.createIcons({
+                        root: wrapperRef.current,
+                        nameAttr: 'data-lucide',
+                        attrs: { class: className, width: size, height: size }
+                    });
+                }
+            }, [name, className, size]);
+
+            return <span ref={wrapperRef} style={{ display: 'inline-flex', verticalAlign: 'middle' }}></span>;
+        };
+
+        // Constantes
         const GRADES_STRUCTURE = [
-            { level: 'INICIAL', Icon: Baby, grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5'] },
-            { level: 'PRIMARIA', Icon: BookOpen, grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P'] },
-            { level: 'SECUNDARIA', Icon: School, grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
+            { level: 'INICIAL', icon: 'baby', grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5'] },
+            { level: 'PRIMARIA', icon: 'book-open', grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P'] },
+            { level: 'SECUNDARIA', icon: 'school', grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
         ];
 
+        // CONFIGURACIÓN DE COLUMNAS (MEJORADA)
+        // 'csv' define los posibles prefijos que buscamos en el Excel
         const SUBJECT_FIELDS = [
-            { key: 'mat', label: 'Matemática', color: '#4F46E5' },
-            { key: 'com', label: 'Comunicación', color: '#4F46E5' },
-            { key: 'ing', label: 'Inglés', color: '#4F46E5' },
-            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5' },
-            { key: 'dpc', label: 'DPCYC', color: '#4F46E5' },
-            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5' },
-            { key: 'ef', label: 'Ed. Física', color: '#4F46E5' },
-            { key: 'ept', label: 'EPT', color: '#4F46E5' },
-            { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5' },
-            { key: 'rel', label: 'Religión', color: '#4F46E5' },
-            { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B' },
-            { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B' },
-            { key: 'c', label: 'Conducta', color: '#10B981' },
-            { key: 'cg', label: 'Comentario', color: '#64748B' }
+            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE'] },
+            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU'] },
+            { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
+            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL'] },
+            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DPC', 'DPCYC', 'DPCC'] },
+            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['SOC', 'CS', 'SOCIALES', 'HISTORIA'] },
+            { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
+            { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
+            { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA'] },
+            { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION'] },
+            { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
+            { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
+            { key: 'c', label: 'Conducta', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] },
+            { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] }
         ];
 
-        // --- PARSER CSV ---
-        const parseCSV = (text) => {
-            const lines = text.split(/\r\n|\n/);
-            const result = [];
-            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toUpperCase());
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                const simpleRow = lines[i].split(',');
-                const finalRow = (row.length > simpleRow.length ? row : simpleRow).map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : '');
-                if (finalRow.length > 0) result.push(finalRow);
-            }
-            return { headers, rows: result };
-        };
+        // --- 4. Componentes ---
 
-        // --- COMPONENTES ---
-        const Sidebar = ({ currentGrade, onSelectGrade, isOpen, onClose }) => {
-            return React.createElement("div", { className: `fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col` }, 
-                React.createElement("div", { className: "p-6 border-b border-slate-100" },
-                    React.createElement("div", { className: "flex items-center gap-3" },
-                        React.createElement("div", { className: "bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200" }, React.createElement(LayoutDashboard, { className: "w-6 h-6 text-white" })),
-                        React.createElement("div", null, React.createElement("h1", { className: "text-lg font-bold tracking-tight text-slate-900" }, "BoletaTracker"), React.createElement("span", { className: "text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full" }, "Pro 2025"))
-                    ),
-                    React.createElement("button", { onClick: onClose, className: "absolute top-6 right-4 md:hidden text-slate-400" }, React.createElement(X, { className: "w-6 h-6" }))
-                ),
-                React.createElement("nav", { className: "flex-1 overflow-y-auto py-6 px-4 space-y-6" },
-                    GRADES_STRUCTURE.map((levelGroup) => 
-                        React.createElement("div", { key: levelGroup.level },
-                            React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2" }, React.createElement(levelGroup.Icon, { className: "w-4 h-4" }), levelGroup.level),
-                            React.createElement("ul", { className: "space-y-1" },
-                                levelGroup.grades.map((grade) => 
-                                    React.createElement("li", { key: grade },
-                                        React.createElement("button", { onClick: () => { onSelectGrade(grade); onClose(); }, className: `w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${currentGrade === grade ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}` }, grade, currentGrade === grade && React.createElement("div", { className: "w-2 h-2 rounded-full bg-white" }))
-                                    )
-                                )
-                            )
-                        )
-                    )
-                ),
-                React.createElement("div", { className: "p-4 border-t border-slate-100 bg-slate-50" }, React.createElement("p", { className: "text-xs text-center text-slate-400" }, "Sistema de Gestión Escolar v2.0"))
-            );
-        };
+        const Sidebar = ({ currentGrade, onSelectGrade, isOpen, onClose }) => (
+            <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col`}>
+                <div className="p-6 border-b border-slate-100 relative">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200">
+                            <Icon name="layout-dashboard" className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold tracking-tight text-slate-900">BoletaTracker</h1>
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">Pro 2025</span>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="absolute top-6 right-4 md:hidden text-slate-400">
+                        <Icon name="x" />
+                    </button>
+                </div>
+                <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-6">
+                    {GRADES_STRUCTURE.map((levelGroup) => (
+                        <div key={levelGroup.level}>
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">
+                                <Icon name={levelGroup.icon} size={16} />
+                                {levelGroup.level}
+                            </div>
+                            <ul className="space-y-1">
+                                {levelGroup.grades.map((grade) => (
+                                    <li key={grade}>
+                                        <button
+                                            onClick={() => { onSelectGrade(grade); onClose(); }}
+                                            className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${
+                                                currentGrade === grade 
+                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
+                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                            }`}
+                                        >
+                                            {grade}
+                                            {currentGrade === grade && <div className="w-2 h-2 rounded-full bg-white" />}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </nav>
+            </div>
+        );
 
         const DashboardStats = ({ students }) => {
             const stats = useMemo(() => {
@@ -207,90 +199,189 @@
                 const subjectCounts = SUBJECT_FIELDS.map(sub => {
                     const count = students.filter(s => s[sub.key]).length;
                     totalFilled += count;
-                    return { name: sub.label, count, color: sub.color, short: sub.label.substring(0, 3) };
+                    return { name: sub.label, count, color: sub.color };
                 });
                 const totalPending = totalSlots - totalFilled;
                 const percent = totalSlots > 0 ? Math.round((totalFilled / totalSlots) * 100) : 0;
-                return { totalStudents: students.length, progress: percent, missing: totalPending, evaluatedFields: SUBJECT_FIELDS.length, subjectCounts, donutData: [{ name: 'Completado', value: totalFilled, color: '#4F46E5' }, { name: 'Pendiente', value: totalPending, color: '#EF4444' }] };
+
+                return {
+                    totalStudents: students.length,
+                    progress: percent,
+                    missing: totalPending,
+                    evaluatedFields: SUBJECT_FIELDS.length,
+                    subjectCounts,
+                    donutData: [
+                        { name: 'Completado', value: totalFilled, color: '#4F46E5' },
+                        { name: 'Pendiente', value: totalPending, color: '#EF4444' }
+                    ]
+                };
             }, [students]);
 
             if (students.length === 0) {
-                return React.createElement("div", { className: "flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed m-6" },
-                    React.createElement(Database, { className: "w-16 h-16 mb-4 opacity-20" }), React.createElement("h3", { className: "text-lg font-bold text-slate-600" }, "Sin Datos Conectados"), React.createElement("p", { className: "max-w-md text-center mt-2 px-6" }, "Este grado no tiene datos. Usa el botón \"Conectar Drive\" arriba.")
+                return (
+                    <div className="flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed m-6">
+                        <div className="opacity-20 mb-4"><Icon name="database" size={64} /></div>
+                        <h3 className="text-lg font-bold text-slate-600">Sin Datos Conectados</h3>
+                        <p className="max-w-md text-center mt-2 px-6">Este grado no tiene datos. Usa el botón "Conectar Drive" arriba.</p>
+                    </div>
                 );
             }
-            return React.createElement("div", { className: "space-y-6 animate-fade-in p-6" },
-                React.createElement("div", null, React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Resumen General - IV Bimestre"), React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, `Monitoreo de ${stats.evaluatedFields} campos.`)),
-                React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" },
-                    [{ label: 'Estudiantes', value: stats.totalStudents, icon: Users, color: 'text-slate-600', bg: 'bg-slate-100', valColor: 'text-slate-800' }, { label: 'Avance Global', value: `${stats.progress}%`, icon: PieIcon, color: 'text-indigo-600', bg: 'bg-indigo-50', valColor: 'text-indigo-600' }, { label: 'Celdas Vacías', value: stats.missing, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50', valColor: 'text-red-500' }, { label: 'Campos', value: stats.evaluatedFields, icon: LayoutGrid, color: 'text-emerald-600', bg: 'bg-emerald-50', valColor: 'text-emerald-600' }].map((kpi, idx) => 
-                        React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between" },
-                            React.createElement("div", null, React.createElement("p", { className: "text-xs font-semibold text-slate-400 uppercase tracking-wider" }, kpi.label), React.createElement("h3", { className: `text-3xl font-bold mt-2 ${kpi.valColor}` }, kpi.value)),
-                            React.createElement("div", { className: `p-2 rounded-lg ${kpi.bg} ${kpi.color}` }, React.createElement(kpi.icon, { className: "w-5 h-5" }))
-                        )
-                    )
-                ),
-                React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" },
-                    React.createElement("div", { className: "lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col" },
-                        React.createElement("div", { className: "flex justify-between items-center mb-6" }, React.createElement("h3", { className: "text-lg font-bold text-slate-800" }, "Estado de Llenado por Campo"), React.createElement("span", { className: "px-2 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded" }, "IV Bimestre")),
-                        React.createElement("div", { className: "flex-1 min-h-[300px]" }, React.createElement(ResponsiveContainer, { width: "100%", height: "100%" }, React.createElement(BarChart, { data: stats.subjectCounts }, React.createElement(CartesianGrid, { strokeDasharray: "3 3", vertical: false, stroke: "#F1F5F9" }), React.createElement(XAxis, { dataKey: "name", tick: {fontSize: 10, fill: '#64748B'}, interval: 0, angle: -45, textAnchor: "end", height: 60 }), React.createElement(YAxis, { tick: {fontSize: 12, fill: '#64748B'} }), React.createElement(Tooltip, { cursor: {fill: '#F8FAFC'}, contentStyle: {borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'} }), React.createElement(Bar, { dataKey: "count", radius: [4, 4, 0, 0] }, stats.subjectCounts.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))))))
-                    ),
-                    React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col" },
-                        React.createElement("h3", { className: "text-lg font-bold text-slate-800 mb-2" }, "Progreso Total"), React.createElement("p", { className: "text-xs text-slate-500 mb-6" }, "Celdas llenas vs vacías."),
-                        React.createElement("div", { className: "flex-1 flex items-center justify-center relative min-h-[220px]" }, React.createElement(ResponsiveContainer, { width: "100%", height: 220 }, React.createElement(PieChart, null, React.createElement(Pie, { data: stats.donutData, cx: "50%", cy: "50%", innerRadius: 60, outerRadius: 80, paddingAngle: 2, dataKey: "value", stroke: "none" }, stats.donutData.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))), React.createElement(Tooltip, null))), React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none" }, React.createElement("span", { className: "text-3xl font-bold text-slate-800" }, `${stats.progress}%`))),
-                        React.createElement("div", { className: "mt-6 space-y-3" },
-                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-slate-50 rounded-lg" }, React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-indigo-500" }), "Completado"), React.createElement("span", { className: "font-bold text-slate-800" }, stats.donutData[0].value)),
-                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-red-50 rounded-lg" }, React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-red-500" }), "Pendiente"), React.createElement("span", { className: "font-bold text-red-600" }, stats.donutData[1].value))
-                        )
-                    )
-                )
+
+            return (
+                <div className="space-y-6 animate-fade-in p-6">
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">Resumen General - IV Bimestre</h2>
+                        <p className="text-slate-500 text-sm mt-1">Monitoreo de {stats.evaluatedFields} campos.</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
+                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Estudiantes</p><h3 className="text-3xl font-bold mt-2 text-slate-800">{stats.totalStudents}</h3></div>
+                            <div className="p-2 rounded-lg bg-slate-100 text-slate-600"><Icon name="users" /></div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
+                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Avance</p><h3 className="text-3xl font-bold mt-2 text-indigo-600">{stats.progress}%</h3></div>
+                            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600"><Icon name="pie-chart" /></div>
+                        </div>
+                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex justify-between">
+                            <div><p className="text-xs font-semibold text-slate-400 uppercase">Faltantes</p><h3 className="text-3xl font-bold mt-2 text-red-500">{stats.missing}</h3></div>
+                            <div className="p-2 rounded-lg bg-red-50 text-red-500"><Icon name="alert-circle" /></div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {CHARTS_AVAILABLE ? (
+                        <>
+                            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[400px]">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4">Detalle por Campo</h3>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={stats.subjectCounts}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} interval={0} tick={{fontSize: 10}} />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                                            {stats.subjectCounts.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            
+                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+                                <h3 className="text-lg font-bold text-slate-800 mb-2">Progreso Total</h3>
+                                <div className="h-64 w-full relative">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie data={stats.donutData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
+                                                {stats.donutData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                                            </Pie>
+                                            <Tooltip />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <span className="text-3xl font-bold text-slate-800">{stats.progress}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                        ) : (
+                            <div className="lg:col-span-3 p-12 text-center text-slate-400 bg-white border border-dashed rounded-xl">
+                                <Icon name="alert-circle" className="mx-auto mb-2" size={32} />
+                                <p>Gráficos no disponibles (Recharts Error)</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
             );
         };
 
         const MatrixTable = ({ students }) => {
             const [filterEmpty, setFilterEmpty] = useState(false);
             const [search, setSearch] = useState('');
-            const filteredStudents = useMemo(() => {
-                return students.filter(stu => {
-                    const term = search.toLowerCase();
-                    const matchesName = stu.name.toLowerCase().includes(term) || stu.hoja.toLowerCase().includes(term);
-                    if (!matchesName) return false;
-                    if (filterEmpty) return SUBJECT_FIELDS.some(sub => !stu[sub.key]);
-                    return true;
-                });
-            }, [students, search, filterEmpty]);
-            const renderStatusCell = (isFilled) => {
-                if (isFilled) return React.createElement("div", { className: "mx-auto w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center" }, React.createElement(Check, { className: "w-3 h-3 text-emerald-600" }));
-                return React.createElement("div", { className: "mx-auto w-5 h-5 rounded-full bg-red-50 border border-red-100 flex items-center justify-center" }, React.createElement(XIcon, { className: "w-3 h-3 text-red-400" }));
-            };
-            return React.createElement("div", { className: "p-6 space-y-6 animate-fade-in" },
-                React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-end md:items-center gap-4" },
-                    React.createElement("div", null, React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Matriz de Control"), React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, "Incluye Áreas, Transversales, Conducta y Comentarios.")),
-                    React.createElement("div", { className: "flex gap-3 w-full md:w-auto" },
-                        React.createElement("div", { className: "relative flex-1 md:w-64" }, React.createElement(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }), React.createElement("input", { type: "text", placeholder: "Buscar estudiante...", className: "w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm", value: search, onChange: (e) => setSearch(e.target.value) })),
-                        React.createElement("button", { onClick: () => setFilterEmpty(!filterEmpty), className: `px-4 py-2 border rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 ${filterEmpty ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}` }, React.createElement(Filter, { className: "w-4 h-4" }), React.createElement("span", { className: "hidden sm:inline" }, "Solo Faltantes"))
-                    )
-                ),
-                React.createElement("div", { className: "bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" },
-                    React.createElement("div", { className: "overflow-x-auto" },
-                        React.createElement("table", { className: "w-full text-left border-collapse" },
-                            React.createElement("thead", null, React.createElement("tr", { className: "bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider" }, React.createElement("th", { className: "px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10" }, "ID"), React.createElement("th", { className: "px-2 py-4 w-16 text-center border-r border-slate-100" }, "Hoja"), React.createElement("th", { className: "px-4 py-4 min-w-[200px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10 shadow-sm" }, "Estudiante"), SUBJECT_FIELDS.map(field => React.createElement("th", { key: field.key, className: "px-2 align-bottom border-r border-slate-100 bg-opacity-30", style: { backgroundColor: `${field.color}10` } }, React.createElement("div", { className: "whitespace-nowrap pb-2 text-center text-[10px] w-full" }, React.createElement("div", { style: { writingMode: 'vertical-rl', transform: 'rotate(180deg)', margin: '0 auto' } }, field.label)))))),
-                            React.createElement("tbody", { className: "divide-y divide-slate-100 text-sm" }, filteredStudents.length > 0 ? filteredStudents.map(stu => React.createElement("tr", { key: stu.id, className: "hover:bg-slate-50 transition-colors border-b border-slate-50 group" }, React.createElement("td", { className: "px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10" }, String(stu.id).padStart(2,'0')), React.createElement("td", { className: "px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100" }, stu.hoja), React.createElement("td", { className: "px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10" }, stu.name), SUBJECT_FIELDS.map(field => React.createElement("td", { key: field.key, className: `px-1 py-2 border-r border-slate-50 text-center ${stu[field.key] ? 'bg-emerald-50/50' : 'bg-red-50/30'}` }, renderStatusCell(stu[field.key]))))) : React.createElement("tr", null, React.createElement("td", { colSpan: 17, className: "p-12 text-center" }, React.createElement("h3", { className: "text-slate-900 font-bold" }, "No se encontraron resultados"))))
-                        )
-                    )
-                )
+
+            const filtered = useMemo(() => students.filter(s => {
+                const match = s.name.toLowerCase().includes(search.toLowerCase());
+                if(!match) return false;
+                if(filterEmpty) return SUBJECT_FIELDS.some(f => !s[f.key]);
+                return true;
+            }), [students, search, filterEmpty]);
+
+            return (
+                <div className="p-6 space-y-6 animate-fade-in">
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                        <div>
+                            <h2 className="text-2xl font-bold text-slate-800">Matriz de Control</h2>
+                            <p className="text-slate-500 text-sm">Vista detallada por estudiante</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <input type="text" placeholder="Buscar..." value={search} onChange={e=>setSearch(e.target.value)} 
+                                className="border border-slate-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+                            <button onClick={()=>setFilterEmpty(!filterEmpty)} className={`px-4 py-2 border rounded-lg text-sm font-bold flex items-center gap-2 ${filterEmpty ? 'bg-indigo-50 text-indigo-600' : 'bg-white'}`}>
+                                <Icon name="filter" size={16} /> Faltantes
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 text-xs font-bold text-slate-500 uppercase">
+                                    <th className="px-4 py-3 sticky left-0 bg-slate-50">Estudiante</th>
+                                    {SUBJECT_FIELDS.map(f => (
+                                        <th key={f.key} className="px-2 py-3 text-center border-l border-slate-100"><div className="whitespace-nowrap writing-mode-vertical" style={{writingMode:'vertical-rl', transform:'rotate(180deg)', margin:'0 auto'}}>{f.label}</div></th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="text-sm divide-y divide-slate-100">
+                                {filtered.map(s => (
+                                    <tr key={s.id} className="hover:bg-slate-50">
+                                        <td className="px-4 py-2 font-medium sticky left-0 bg-white">{s.name}</td>
+                                        {SUBJECT_FIELDS.map(f => (
+                                            <td key={f.key} className={`px-1 py-2 text-center border-l border-slate-50 ${s[f.key] ? 'bg-emerald-50/50' : 'bg-red-50/30'}`}>
+                                                {s[f.key] ? <span className="text-emerald-500">✓</span> : <span className="text-red-400">✗</span>}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                                {filtered.length === 0 && <tr><td colSpan="15" className="p-8 text-center text-slate-400">No hay datos</td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             );
         };
 
-        const ConnectionModal = ({ isOpen, onClose, onSync, currentUrl, loading }) => {
+        const ConnectionModal = ({ isOpen, onClose, onSync, currentUrl }) => {
             const [url, setUrl] = useState(currentUrl || '');
+            const [isSyncing, setIsSyncing] = useState(false);
+
             useEffect(() => { setUrl(currentUrl || ''); }, [currentUrl]);
-            if (!isOpen) return null;
-            return React.createElement("div", { className: "fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" },
-                React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" },
-                    React.createElement("div", { className: "p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50" }, React.createElement("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2" }, React.createElement(Database, { className: "w-5 h-5 text-indigo-600" }), "Conectar Drive"), React.createElement("button", { onClick: onClose, className: "text-slate-400" }, React.createElement(X, { className: "w-5 h-5" }))),
-                    React.createElement("div", { className: "p-6 space-y-6" }, React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-slate-500 uppercase mb-2" }, "Enlace CSV de Google Drive"), React.createElement("div", { className: "relative" }, React.createElement(LinkIcon, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }), React.createElement("input", { type: "text", value: url, onChange: (e) => setUrl(e.target.value), placeholder: "https://docs.google.com/spreadsheets/.../pub?output=csv", className: "w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" })), React.createElement("p", { className: "text-[10px] text-slate-400 mt-2" }, "Archivo > Compartir > Publicar en la web > CSV."))),
-                    React.createElement("div", { className: "p-4 bg-slate-50 flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-slate-600 font-bold text-sm" }, "Cancelar"), React.createElement("button", { onClick: () => onSync(url), disabled: loading, className: "px-6 py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg flex items-center gap-2 disabled:opacity-50" }, loading ? React.createElement(RefreshCw, { className: "w-4 h-4 animate-spin" }) : React.createElement(ArrowRight, { className: "w-4 h-4" }), "Sincronizar"))
-                )
+
+            if(!isOpen) return null;
+
+            const handleSyncClick = async () => {
+                setIsSyncing(true);
+                await onSync(url);
+                setIsSyncing(false);
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><Icon name="database" className="text-indigo-600"/> Conectar Drive</h3>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Enlace CSV</label>
+                        <input type="text" value={url} onChange={e=>setUrl(e.target.value)} className="w-full border p-3 rounded-xl mb-4 text-sm" placeholder="https://...output=csv" />
+                        <div className="flex justify-end gap-2">
+                            <button onClick={onClose} className="px-4 py-2 text-slate-600 text-sm font-bold">Cancelar</button>
+                            <button onClick={handleSyncClick} disabled={isSyncing} className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50">
+                                {isSyncing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="refresh-cw" size={16} />} 
+                                {isSyncing ? "Sincronizando..." : "Sincronizar"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             );
         };
 
@@ -300,89 +391,193 @@
             const [students, setStudents] = useState([]);
             const [view, setView] = useState('dashboard');
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-            const [loading, setLoading] = useState(true);
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [currentDriveUrl, setCurrentDriveUrl] = useState('');
             const [lastUpdated, setLastUpdated] = useState(null);
 
+            // Auth
             useEffect(() => {
-                if (!auth) return;
-                const initAuth = async () => {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
-                        else { await signInAnonymously(auth); }
-                    } catch (error) { console.error("Auth error:", error); }
-                };
-                initAuth();
-                return onAuthStateChanged(auth, setUser);
+                const unsub = auth.onAuthStateChanged(u => {
+                    if (u) setUser(u);
+                    else auth.signInAnonymously().catch(console.error);
+                });
+                return () => unsub();
             }, []);
 
+            // Data
             useEffect(() => {
-                if (!user || !db) { setLoading(false); return; }
-                setLoading(true);
-                let gradeDocRef;
-                if (typeof __app_id !== 'undefined') { gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade); } 
-                else { gradeDocRef = doc(db, 'grades', currentGrade); }
-                return onSnapshot(gradeDocRef, (docSnapshot) => {
-                    if (docSnapshot.exists()) {
-                        const data = docSnapshot.data();
+                if (!user) return;
+                const docRef = db.collection('grades').doc(currentGrade);
+                const unsub = docRef.onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
                         setStudents(data.students || []);
                         setCurrentDriveUrl(data.driveUrl || '');
                         setLastUpdated(data.lastUpdated ? new Date(data.lastUpdated) : null);
-                    } else { setStudents([]); setCurrentDriveUrl(''); setLastUpdated(null); }
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Firestore Error:", error);
-                    // No bloquear la UI si es solo error de lectura, pero notificar
+                    } else {
+                        setStudents([]);
+                        setCurrentDriveUrl('');
+                    }
                 });
+                return () => unsub();
             }, [user, currentGrade]);
 
-            const handleSync = async (url) => {
-                if (!url) return;
-                setLoading(true);
-                try {
-                    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-                    const response = await fetch(proxy);
-                    if (!response.ok) throw new Error('Error al descargar');
-                    const students = processCSVData(await response.text());
-                    if (students.length > 0 && db) {
-                        let gradeDocRef;
-                        if (typeof __app_id !== 'undefined') { gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade); } 
-                        else { gradeDocRef = doc(db, 'grades', currentGrade); }
-                        await setDoc(gradeDocRef, { students, driveUrl: url, lastUpdated: new Date().toISOString() });
-                        setIsModalOpen(false);
-                    }
-                } catch (e) { alert("Error al sincronizar. Verifica el enlace."); console.error(e); }
-                setLoading(false);
+            // Sync
+            const parseCSV = (text) => {
+                const lines = text.split(/\r\n|\n/);
+                const headers = lines[0].split(',').map(h => h.trim().toUpperCase().replace(/"/g,''));
+                const colMap = {
+                    name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
+                    hoja: headers.findIndex(h => h.includes('HOJA')),
+                };
+                
+                if(colMap.name === -1) return [];
+
+                // Mapear materias (LOGICA MEJORADA)
+                const mapSubject = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
+                const subjectCols = {};
+                SUBJECT_FIELDS.forEach(f => {
+                    // Ahora buscamos cualquier variación definida en f.csv seguida de _IV
+                    // Ej: DPC_IV, DPCYC_IV, DPCC_IV
+                    const searchKeys = f.csv.map(k => k + '_IV'); 
+                    subjectCols[f.key] = mapSubject(searchKeys);
+                });
+
+                const result = [];
+                for(let i=1; i<lines.length; i++){
+                    if(!lines[i].trim()) continue;
+                    // Improved row splitting (handles commas inside quotes somewhat better for standard google sheets)
+                    // Still basic: assumes no commas in values or quotes are handled
+                    const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    if(!row[colMap.name]) continue;
+
+                    const student = {
+                        id: i,
+                        name: row[colMap.name].replace(/"/g,''),
+                        hoja: row[colMap.hoja] ? row[colMap.hoja].replace(/"/g,'') : '',
+                    };
+
+                    SUBJECT_FIELDS.forEach(f => {
+                        const idx = subjectCols[f.key];
+                        if(idx > -1 && row[idx]) {
+                            const val = row[idx].replace(/"/g,'').trim().toUpperCase();
+                            student[f.key] = (val !== '' && val !== 'FALSE' && val !== '-');
+                        } else {
+                            student[f.key] = false;
+                        }
+                    });
+                    result.push(student);
+                }
+                return result;
             };
 
-            if (!firebaseInitialized) { return React.createElement("div", { className: "p-8 text-center" }, "Error Fatal: Firebase no inició"); }
+            const handleSync = async (url) => {
+                if(!url) return;
+                
+                // Helper para fetch con timeout
+                const fetchWithProxy = async (proxyUrl) => {
+                    const controller = new AbortController();
+                    const id = setTimeout(() => controller.abort(), 10000);
+                    try {
+                        const res = await fetch(proxyUrl, { signal: controller.signal });
+                        clearTimeout(id);
+                        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+                        return await res.text();
+                    } catch(e) {
+                        clearTimeout(id);
+                        throw e;
+                    }
+                };
 
-            return React.createElement("div", { className: "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden" },
-                isSidebarOpen && React.createElement("div", { className: "fixed inset-0 bg-black/50 z-40 md:hidden", onClick: () => setIsSidebarOpen(false) }),
-                React.createElement(Sidebar, { currentGrade, onSelectGrade: setCurrentGrade, isOpen: isSidebarOpen, onClose: () => setIsSidebarOpen(false) }),
-                React.createElement("div", { className: "flex-1 flex flex-col h-screen overflow-hidden relative" },
-                    React.createElement("header", { className: "bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-30" },
-                        React.createElement("div", { className: "flex items-center gap-4" },
-                            React.createElement("button", { className: "md:hidden p-2 hover:bg-slate-100 rounded-lg", onClick: () => setIsSidebarOpen(true) }, React.createElement(Menu, { className: "w-6 h-6 text-slate-600" })),
-                            React.createElement("div", null, React.createElement("h2", { className: "text-xl font-bold text-slate-800" }, currentGrade), React.createElement("div", { className: "flex items-center gap-2 mt-1" }, React.createElement("div", { className: `w-2 h-2 rounded-full ${lastUpdated ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}` }), React.createElement("span", { className: "text-xs text-slate-500 font-medium" }, lastUpdated ? `Act: ${lastUpdated.toLocaleTimeString()}` : 'Desconectado')))
-                        ),
-                        React.createElement("button", { onClick: () => setIsModalOpen(true), className: "flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm" }, React.createElement(Database, { className: "w-4 h-4" }), React.createElement("span", { className: "hidden md:inline" }, "Conectar Drive"))
-                    ),
-                    React.createElement("div", { className: "px-6 pt-6 pb-2" }, React.createElement("div", { className: "flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit" }, React.createElement("button", { onClick: () => setView('dashboard'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'dashboard' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(LayoutDashboard, { className: "w-4 h-4" }), "Dashboard"), React.createElement("button", { onClick: () => setView('matrix'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'matrix' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(Table, { className: "w-4 h-4" }), "Matriz"))),
-                    React.createElement("main", { className: "flex-1 overflow-auto bg-slate-50 relative" }, view === 'dashboard' && React.createElement(DashboardStats, { students }), view === 'matrix' && React.createElement(MatrixTable, { students }))
-                ),
-                React.createElement(ConnectionModal, { isOpen: isModalOpen, onClose: () => setIsModalOpen(false), onSync: handleSync, currentUrl: currentDriveUrl, loading })
+                try {
+                    let cleanUrl = url;
+                    // Auto-fix URL si es de edición o pubhtml
+                    if (url.includes('/edit')) {
+                        cleanUrl = url.replace(/\/edit.*$/, '/export?format=csv');
+                    } else if (url.includes('/pubhtml')) {
+                        cleanUrl = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
+                    }
+
+                    let txt = "";
+                    let errorDetails = "";
+
+                    // Estrategia de doble proxy
+                    try {
+                        // Intento 1: AllOrigins
+                        txt = await fetchWithProxy(`https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`);
+                    } catch (e1) {
+                        console.warn("Proxy 1 falló:", e1);
+                        errorDetails += `Proxy 1: ${e1.message}. `;
+                        try {
+                            // Intento 2: CorsProxy
+                            txt = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(cleanUrl)}`);
+                        } catch (e2) {
+                            console.warn("Proxy 2 falló:", e2);
+                            throw new Error("No se pudo conectar. Verifica que el enlace sea 'Público en la web'.");
+                        }
+                    }
+                    
+                    const data = parseCSV(txt);
+                    
+                    if(data.length > 0) {
+                        await db.collection('grades').doc(currentGrade).set({
+                            students: data,
+                            driveUrl: url,
+                            lastUpdated: new Date().toISOString()
+                        });
+                        setIsModalOpen(false);
+                        alert(`¡Éxito! Se cargaron ${data.length} estudiantes.`);
+                    } else {
+                        alert("Error: El archivo CSV parece vacío o faltan las columnas 'ESTUDIANTE'/'HOJA'.");
+                    }
+                } catch(e) {
+                    alert("Error sincronizando: " + e.message);
+                }
+            };
+
+            return (
+                <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
+                    {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={()=>setIsSidebarOpen(false)} />}
+                    <Sidebar currentGrade={currentGrade} onSelectGrade={setCurrentGrade} isOpen={isSidebarOpen} onClose={()=>setIsSidebarOpen(false)} />
+                    
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+                        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-30">
+                            <div className="flex items-center gap-4">
+                                <button className="md:hidden" onClick={()=>setIsSidebarOpen(true)}><Icon name="menu" /></button>
+                                <div>
+                                    <h2 className="text-xl font-bold">{currentGrade}</h2>
+                                    <span className="text-xs text-slate-500">{lastUpdated ? 'Actualizado: ' + lastUpdated.toLocaleTimeString() : 'Desconectado'}</span>
+                                </div>
+                            </div>
+                            <button onClick={()=>setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-xs font-bold hover:bg-slate-50">
+                                <Icon name="database" size={14} /> <span className="hidden md:inline">Conectar Drive</span>
+                            </button>
+                        </header>
+
+                        <div className="px-6 pt-6 pb-2">
+                             <div className="flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit">
+                                <button onClick={()=>setView('dashboard')} className={`px-4 py-2 rounded-lg text-sm font-medium flex gap-2 items-center ${view==='dashboard'?'bg-white shadow-sm':'text-slate-600'}`}>
+                                    <Icon name="layout-dashboard" size={16}/> Dashboard
+                                </button>
+                                <button onClick={()=>setView('matrix')} className={`px-4 py-2 rounded-lg text-sm font-medium flex gap-2 items-center ${view==='matrix'?'bg-white shadow-sm':'text-slate-600'}`}>
+                                    <Icon name="table" size={16}/> Matriz
+                                </button>
+                             </div>
+                        </div>
+
+                        <main className="flex-1 overflow-auto bg-slate-50">
+                            {view === 'dashboard' ? <DashboardStats students={students} /> : <MatrixTable students={students} />}
+                        </main>
+                    </div>
+
+                    <ConnectionModal isOpen={isModalOpen} onClose={()=>setIsModalOpen(false)} onSync={handleSync} currentUrl={currentDriveUrl} />
+                </div>
             );
         };
 
-        try {
-            const root = createRoot(document.getElementById('root'));
-            root.render(React.createElement(App));
-        } catch (error) {
-            console.error("Render Error:", error);
-            document.body.innerHTML = `<h1 style="color:red">Error Crítico al Renderizar: ${error.message}</h1>`;
-        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+        document.getElementById('loader-fallback').style.display = 'none';
     </script>
 </body>
 </html>
