@@ -47,7 +47,7 @@
     <div id="loader-fallback">
         <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
         <h2 class="text-slate-600 font-bold">Cargando BoletaTracker...</h2>
-        <p class="text-xs text-slate-400 mt-2">Versión Estable v2.4 (Smart Column Fix)</p>
+        <p class="text-xs text-slate-400 mt-2">Versión v2.5 (Búsqueda Super Flexible)</p>
     </div>
 
     <div id="root"></div>
@@ -125,23 +125,24 @@
             { level: 'SECUNDARIA', icon: 'school', grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
         ];
 
-        // CONFIGURACIÓN DE COLUMNAS (MEJORADA)
-        // 'csv' define los posibles prefijos que buscamos en el Excel
+        // CONFIGURACIÓN DE COLUMNAS (SÚPER FLEXIBLE)
+        // Agregamos todas las variantes posibles de nombres
         const SUBJECT_FIELDS = [
-            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT_IV', 'MATE'] },
-            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM_IV', 'COMU'] },
-            { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING_IV', 'INGLES'] },
-            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART_IV', 'ARTE', 'CUL'] },
-            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DPC', 'DPCYC_IV', 'DPCC'] },
-            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['SOC', 'CS_IV', 'SOCIALES', 'HISTORIA'] },
-            { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF_IV', 'ED', 'FISICA'] },
-            { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT_IV'] },
-            { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT_IV', 'CT', 'CIENCIA', 'CTA'] },
-            { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL_IV', 'ER', 'RELIGION'] },
-            { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1_IV', 'TIC', 'C28'] },
-            { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2_IV', 'AUTONOMIA', 'C29'] },
+            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE'] },
+            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU'] },
+            { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
+            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL'] },
+            // Agregamos DCPYC a la lista de DPC
+            { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DPC', 'DPCYC', 'DPCC', 'DCPYC', 'PERSONA'] }, 
+            { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['SOC', 'CS', 'SOCIALES', 'HISTORIA'] },
+            { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
+            { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
+            { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+            { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION', 'RELIGIÓN'] },
+            { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
+            { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
             { key: 'c', label: 'Conducta', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] },
-            { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG_IV', 'COM', 'OBS', 'COMENTARIO'] }
+            { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] }
         ];
 
         // --- 4. Componentes ---
@@ -425,7 +426,10 @@
             // Sync
             const parseCSV = (text) => {
                 const lines = text.split(/\r\n|\n/);
+                // 1. Limpieza de Cabeceras (Uppercase y sin comillas)
                 const headers = lines[0].split(',').map(h => h.trim().toUpperCase().replace(/"/g,''));
+                
+                // 2. Mapeo de columnas básicas
                 const colMap = {
                     name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
                     hoja: headers.findIndex(h => h.includes('HOJA')),
@@ -433,21 +437,40 @@
                 
                 if(colMap.name === -1) return [];
 
-                // Mapear materias (LOGICA MEJORADA)
-                const mapSubject = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
+                // 3. Mapeo de Cursos Inteligente
+                // Normaliza texto para ignorar tildes
+                const normalize = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+                const headersNorm = headers.map(normalize);
+
                 const subjectCols = {};
                 SUBJECT_FIELDS.forEach(f => {
-                    // Ahora buscamos cualquier variación definida en f.csv seguida de _IV
-                    // Ej: DPC_IV, DPCYC_IV, DPCC_IV
-                    const searchKeys = f.csv.map(k => k + '_IV'); 
-                    subjectCols[f.key] = mapSubject(searchKeys);
-                });
+                    // Estrategia:
+                    // 1. Buscar si algún header contiene la palabra clave DEL CURSO (keyword)
+                    // 2. Y opcionalmente contiene 'IV' o '4' (para asegurar que es el bimestre correcto)
+                    // 3. Si no encuentra con 'IV', agarra la columna que tenga solo el nombre (fallback)
 
+                    let idx = headersNorm.findIndex(h => {
+                         const hasKeyword = f.csv.some(k => h.includes(k)); // Ej: h.includes('RELIGION')
+                         const hasBimestre = h.includes('_IV') || h.includes(' IV') || h.includes('4') || h.endsWith('IV');
+                         return hasKeyword && hasBimestre;
+                    });
+
+                    // Si no encontró con 'IV', intenta buscar solo por nombre (ej: columna se llama solo 'RELIGION')
+                    if (idx === -1) {
+                         idx = headersNorm.findIndex(h => f.csv.some(k => h.includes(k)));
+                    }
+                    
+                    subjectCols[f.key] = idx;
+                });
+                
+                // Debug (Verifica esto en la consola del navegador si algo falla)
+                console.log("Columnas Encontradas:", subjectCols);
+
+                // 4. Extracción de Datos
                 const result = [];
                 for(let i=1; i<lines.length; i++){
                     if(!lines[i].trim()) continue;
-                    // Improved row splitting (handles commas inside quotes somewhat better for standard google sheets)
-                    // Still basic: assumes no commas in values or quotes are handled
+                    // Regex para separar por comas pero ignorar las que están dentro de comillas
                     const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     if(!row[colMap.name]) continue;
 
