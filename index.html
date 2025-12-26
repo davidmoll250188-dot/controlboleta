@@ -68,40 +68,35 @@
 
         // --- CONFIGURACIÓN DE FIREBASE ---
         
-        // 1. Configuración por defecto (PARA GITHUB PAGES / SERVIDOR PROPIO)
-        // Cuando subas esto a internet, reemplaza los valores de abajo con los de tu consola de Firebase.
+        // 1. Configuración Real (INTEGRADA)
         let firebaseConfig = {
-            apiKey: "TU_API_KEY_AQUI",
-            authDomain: "TU_PROYECTO.firebaseapp.com",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_PROYECTO.appspot.com",
-            messagingSenderId: "TU_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSyCQsc2fyRC-JQYn8s4YzxPDYjh0DQ_xyoM",
+            authDomain: "revision-de-boletas.firebaseapp.com",
+            projectId: "revision-de-boletas",
+            storageBucket: "revision-de-boletas.firebasestorage.app",
+            messagingSenderId: "1031516186316",
+            appId: "1:1031516186316:web:218bfaca40369bf0b7c469",
+            measurementId: "G-XPMK46L6HY"
         };
 
         // 2. Configuración Automática (PARA ESTE ENTORNO DE PRUEBA)
-        // Esto detecta si estamos en el chat y usa una base de datos temporal automáticamente.
         const isPreviewEnv = typeof __firebase_config !== 'undefined';
         if (isPreviewEnv) {
              firebaseConfig = JSON.parse(__firebase_config);
         }
         
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "mi-escuela-app-v1"; 
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "revision-de-boletas"; 
 
         // Inicializar Firebase
         let app, auth, db;
         let firebaseInitialized = false;
 
         try {
-            // Inicializamos si estamos en el entorno de prueba O si el usuario ya puso sus claves reales
-            if (isPreviewEnv || firebaseConfig.apiKey !== "TU_API_KEY_AQUI") {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                firebaseInitialized = true;
-            } else {
-                console.warn("⚠️ Firebase no configurado. Se mostrará pantalla de configuración.");
-            }
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            firebaseInitialized = true;
+            console.log("Firebase inicializado correctamente con ID:", firebaseConfig.projectId);
         } catch (e) {
             console.error("Error iniciando Firebase:", e);
         }
@@ -492,14 +487,13 @@
                 if (!user || !db) { setLoading(false); return; }
                 setLoading(true);
                 // Usamos una colección temporal si estamos en el entorno de prueba para evitar colisiones
-                const collectionPath = typeof __app_id !== 'undefined' ? ['artifacts', APP_ID, 'public', 'data', 'grades', currentGrade] : ['grades', currentGrade];
                 
                 // Firestore v9 modular path construction
                 let gradeDocRef;
                 if (typeof __app_id !== 'undefined') {
                     gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade);
                 } else {
-                     // Fallback simple path para producción propia si se desea
+                      // Fallback simple path para producción propia si se desea
                     gradeDocRef = doc(db, 'grades', currentGrade);
                 }
 
@@ -586,13 +580,7 @@
                         React.createElement("h2", { className: "text-xl font-bold text-slate-800" }, "Falta Configuración de Firebase"),
                         React.createElement("p", { className: "text-slate-600 mt-2" }, "Si ves este mensaje en GitHub/Producción: Edita el index.html y agrega tus credenciales."),
                         React.createElement("div", { className: "mt-4 p-3 bg-slate-100 rounded text-xs text-left font-mono overflow-x-auto" }, 
-                            "const firebaseConfig = { apiKey: "AIzaSyCQsc2fyRC-JQYn8s4YzxPDYjh0DQ_xyoM",
-  authDomain: "revision-de-boletas.firebaseapp.com",
-  projectId: "revision-de-boletas",
-  storageBucket: "revision-de-boletas.firebasestorage.app",
-  messagingSenderId: "1031516186316",
-  appId: "1:1031516186316:web:218bfaca40369bf0b7c469",
-  measurementId: "G-XPMK46L6HY" }"
+                            "const firebaseConfig = { apiKey: ... }"
                         )
                     )
                 );
