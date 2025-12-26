@@ -13,18 +13,41 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
-        /* Animaciones */
         .animate-fade-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        /* Estilos específicos para Recharts en móvil */
         .recharts-wrapper { max-width: 100%; }
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+        
+        /* Estilo para el mensaje de error en pantalla */
+        #error-overlay {
+            display: none; position: fixed; inset: 0; background: #FFF0F0; 
+            z-index: 9999; padding: 2rem; overflow: auto;
+        }
     </style>
 
-    <!-- Importmap para definir versiones de librerías -->
+    <!-- Sistema de Diagnóstico de Errores (Se ejecuta antes que nada) -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const overlay = document.getElementById('error-overlay');
+            const content = document.getElementById('error-content');
+            if (overlay && content) {
+                overlay.style.display = 'block';
+                content.innerHTML += `
+                    <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
+                        <p class="font-bold">Error Detectado:</p>
+                        <p>${msg}</p>
+                        <p class="text-sm mt-2 text-red-500 font-mono">Línea: ${line} | Columna: ${col}</p>
+                        ${error ? `<pre class="mt-2 text-xs bg-white p-2 rounded border border-red-200 overflow-auto">${error.stack}</pre>` : ''}
+                    </div>
+                `;
+            }
+            return false;
+        };
+    </script>
+
+    <!-- Importmap -->
     <script type="importmap">
     {
       "imports": {
@@ -41,7 +64,22 @@
     </script>
 </head>
 <body>
-    <div id="root"></div>
+    <!-- Contenedor Principal -->
+    <div id="root">
+        <!-- Pantalla de Carga Inicial (Se reemplaza cuando React carga) -->
+        <div class="h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-400">
+            <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+            <p class="font-medium animate-pulse">Iniciando BoletaTracker...</p>
+            <p class="text-xs mt-2 text-slate-300">Si esto tarda más de 5 segundos, verifica la consola.</p>
+        </div>
+    </div>
+
+    <!-- Overlay de Errores -->
+    <div id="error-overlay">
+        <h1 class="text-2xl font-bold text-red-600 mb-4">⚠️ Algo salió mal</h1>
+        <p class="text-slate-600 mb-6">Por favor, toma una captura de este error para solucionarlo.</p>
+        <div id="error-content"></div>
+    </div>
 
     <script type="module">
         import React, { useState, useEffect, useMemo } from 'react';
@@ -66,9 +104,7 @@
             ResponsiveContainer, PieChart, Pie, Cell 
         } from 'recharts';
 
-        // --- CONFIGURACIÓN DE FIREBASE ---
-        
-        // 1. Configuración Real (INTEGRADA)
+        // --- CONFIGURACIÓN ---
         let firebaseConfig = {
             apiKey: "AIzaSyCQsc2fyRC-JQYn8s4YzxPDYjh0DQ_xyoM",
             authDomain: "revision-de-boletas.firebaseapp.com",
@@ -79,12 +115,8 @@
             measurementId: "G-XPMK46L6HY"
         };
 
-        // 2. Configuración Automática (PARA ESTE ENTORNO DE PRUEBA)
         const isPreviewEnv = typeof __firebase_config !== 'undefined';
-        if (isPreviewEnv) {
-             firebaseConfig = JSON.parse(__firebase_config);
-        }
-        
+        if (isPreviewEnv) { firebaseConfig = JSON.parse(__firebase_config); }
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : "revision-de-boletas"; 
 
         // Inicializar Firebase
@@ -96,28 +128,16 @@
             auth = getAuth(app);
             db = getFirestore(app);
             firebaseInitialized = true;
-            console.log("Firebase inicializado correctamente con ID:", firebaseConfig.projectId);
         } catch (e) {
             console.error("Error iniciando Firebase:", e);
+            throw new Error("Fallo al conectar con Firebase: " + e.message);
         }
 
         // --- CONSTANTES ---
         const GRADES_STRUCTURE = [
-            {
-                level: 'INICIAL',
-                Icon: Baby,
-                grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5']
-            },
-            {
-                level: 'PRIMARIA',
-                Icon: BookOpen,
-                grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P']
-            },
-            {
-                level: 'SECUNDARIA',
-                Icon: School,
-                grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S']
-            }
+            { level: 'INICIAL', Icon: Baby, grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5'] },
+            { level: 'PRIMARIA', Icon: BookOpen, grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P'] },
+            { level: 'SECUNDARIA', Icon: School, grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
         ];
 
         const SUBJECT_FIELDS = [
@@ -142,74 +162,44 @@
             const lines = text.split(/\r\n|\n/);
             const result = [];
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toUpperCase());
-
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
                 const row = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
                 const simpleRow = lines[i].split(',');
-                const finalRow = (row.length > simpleRow.length ? row : simpleRow).map(cell => 
-                    cell ? cell.replace(/^"|"$/g, '').trim() : ''
-                );
+                const finalRow = (row.length > simpleRow.length ? row : simpleRow).map(cell => cell ? cell.replace(/^"|"$/g, '').trim() : '');
                 if (finalRow.length > 0) result.push(finalRow);
             }
             return { headers, rows: result };
         };
 
         // --- COMPONENTES ---
-
-        // 1. Sidebar
         const Sidebar = ({ currentGrade, onSelectGrade, isOpen, onClose }) => {
-            return React.createElement("div", {
-                className: `fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col`
-            }, 
+            return React.createElement("div", { className: `fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col` }, 
                 React.createElement("div", { className: "p-6 border-b border-slate-100" },
                     React.createElement("div", { className: "flex items-center gap-3" },
-                        React.createElement("div", { className: "bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200" },
-                            React.createElement(LayoutDashboard, { className: "w-6 h-6 text-white" })
-                        ),
-                        React.createElement("div", null,
-                            React.createElement("h1", { className: "text-lg font-bold tracking-tight text-slate-900" }, "BoletaTracker"),
-                            React.createElement("span", { className: "text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full" }, "Pro 2025")
-                        )
+                        React.createElement("div", { className: "bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-200" }, React.createElement(LayoutDashboard, { className: "w-6 h-6 text-white" })),
+                        React.createElement("div", null, React.createElement("h1", { className: "text-lg font-bold tracking-tight text-slate-900" }, "BoletaTracker"), React.createElement("span", { className: "text-[10px] font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full" }, "Pro 2025"))
                     ),
-                    React.createElement("button", { onClick: onClose, className: "absolute top-6 right-4 md:hidden text-slate-400" },
-                        React.createElement(X, { className: "w-6 h-6" })
-                    )
+                    React.createElement("button", { onClick: onClose, className: "absolute top-6 right-4 md:hidden text-slate-400" }, React.createElement(X, { className: "w-6 h-6" }))
                 ),
                 React.createElement("nav", { className: "flex-1 overflow-y-auto py-6 px-4 space-y-6" },
                     GRADES_STRUCTURE.map((levelGroup) => 
                         React.createElement("div", { key: levelGroup.level },
-                            React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2" },
-                                React.createElement(levelGroup.Icon, { className: "w-4 h-4" }),
-                                levelGroup.level
-                            ),
+                            React.createElement("div", { className: "flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2" }, React.createElement(levelGroup.Icon, { className: "w-4 h-4" }), levelGroup.level),
                             React.createElement("ul", { className: "space-y-1" },
                                 levelGroup.grades.map((grade) => 
                                     React.createElement("li", { key: grade },
-                                        React.createElement("button", {
-                                            onClick: () => { onSelectGrade(grade); onClose(); },
-                                            className: `w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${
-                                                currentGrade === grade 
-                                                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' 
-                                                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                            }`
-                                        },
-                                            grade,
-                                            currentGrade === grade && React.createElement("div", { className: "w-2 h-2 rounded-full bg-white" })
-                                        )
+                                        React.createElement("button", { onClick: () => { onSelectGrade(grade); onClose(); }, className: `w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-between ${currentGrade === grade ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}` }, grade, currentGrade === grade && React.createElement("div", { className: "w-2 h-2 rounded-full bg-white" }))
                                     )
                                 )
                             )
                         )
                     )
                 ),
-                React.createElement("div", { className: "p-4 border-t border-slate-100 bg-slate-50" },
-                    React.createElement("p", { className: "text-xs text-center text-slate-400" }, "Sistema de Gestión Escolar v2.0")
-                )
+                React.createElement("div", { className: "p-4 border-t border-slate-100 bg-slate-50" }, React.createElement("p", { className: "text-xs text-center text-slate-400" }, "Sistema de Gestión Escolar v2.0"))
             );
         };
 
-        // 2. Dashboard
         const DashboardStats = ({ students }) => {
             const stats = useMemo(() => {
                 const totalSlots = students.length * SUBJECT_FIELDS.length;
@@ -221,115 +211,44 @@
                 });
                 const totalPending = totalSlots - totalFilled;
                 const percent = totalSlots > 0 ? Math.round((totalFilled / totalSlots) * 100) : 0;
-
-                return {
-                    totalStudents: students.length,
-                    progress: percent,
-                    missing: totalPending,
-                    evaluatedFields: SUBJECT_FIELDS.length,
-                    subjectCounts,
-                    donutData: [
-                        { name: 'Completado', value: totalFilled, color: '#4F46E5' },
-                        { name: 'Pendiente', value: totalPending, color: '#EF4444' }
-                    ]
-                };
+                return { totalStudents: students.length, progress: percent, missing: totalPending, evaluatedFields: SUBJECT_FIELDS.length, subjectCounts, donutData: [{ name: 'Completado', value: totalFilled, color: '#4F46E5' }, { name: 'Pendiente', value: totalPending, color: '#EF4444' }] };
             }, [students]);
 
             if (students.length === 0) {
                 return React.createElement("div", { className: "flex flex-col items-center justify-center h-96 text-slate-400 bg-white rounded-2xl border border-slate-200 border-dashed m-6" },
-                    React.createElement(Database, { className: "w-16 h-16 mb-4 opacity-20" }),
-                    React.createElement("h3", { className: "text-lg font-bold text-slate-600" }, "Sin Datos Conectados"),
-                    React.createElement("p", { className: "max-w-md text-center mt-2 px-6" }, "Este grado no tiene datos. Usa el botón \"Conectar Drive\" arriba.")
+                    React.createElement(Database, { className: "w-16 h-16 mb-4 opacity-20" }), React.createElement("h3", { className: "text-lg font-bold text-slate-600" }, "Sin Datos Conectados"), React.createElement("p", { className: "max-w-md text-center mt-2 px-6" }, "Este grado no tiene datos. Usa el botón \"Conectar Drive\" arriba.")
                 );
             }
-
             return React.createElement("div", { className: "space-y-6 animate-fade-in p-6" },
-                // Intro
-                React.createElement("div", null,
-                    React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Resumen General - IV Bimestre"),
-                    React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, `Monitoreo de ${stats.evaluatedFields} campos.`)
-                ),
-                // KPIs
+                React.createElement("div", null, React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Resumen General - IV Bimestre"), React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, `Monitoreo de ${stats.evaluatedFields} campos.`)),
                 React.createElement("div", { className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" },
-                    [
-                        { label: 'Estudiantes', value: stats.totalStudents, icon: Users, color: 'text-slate-600', bg: 'bg-slate-100', valColor: 'text-slate-800' },
-                        { label: 'Avance Global', value: `${stats.progress}%`, icon: PieIcon, color: 'text-indigo-600', bg: 'bg-indigo-50', valColor: 'text-indigo-600' },
-                        { label: 'Celdas Vacías', value: stats.missing, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50', valColor: 'text-red-500' },
-                        { label: 'Campos', value: stats.evaluatedFields, icon: LayoutGrid, color: 'text-emerald-600', bg: 'bg-emerald-50', valColor: 'text-emerald-600' }
-                    ].map((kpi, idx) => 
+                    [{ label: 'Estudiantes', value: stats.totalStudents, icon: Users, color: 'text-slate-600', bg: 'bg-slate-100', valColor: 'text-slate-800' }, { label: 'Avance Global', value: `${stats.progress}%`, icon: PieIcon, color: 'text-indigo-600', bg: 'bg-indigo-50', valColor: 'text-indigo-600' }, { label: 'Celdas Vacías', value: stats.missing, icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50', valColor: 'text-red-500' }, { label: 'Campos', value: stats.evaluatedFields, icon: LayoutGrid, color: 'text-emerald-600', bg: 'bg-emerald-50', valColor: 'text-emerald-600' }].map((kpi, idx) => 
                         React.createElement("div", { key: idx, className: "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start justify-between" },
-                            React.createElement("div", null,
-                                React.createElement("p", { className: "text-xs font-semibold text-slate-400 uppercase tracking-wider" }, kpi.label),
-                                React.createElement("h3", { className: `text-3xl font-bold mt-2 ${kpi.valColor}` }, kpi.value)
-                            ),
-                            React.createElement("div", { className: `p-2 rounded-lg ${kpi.bg} ${kpi.color}` },
-                                React.createElement(kpi.icon, { className: "w-5 h-5" })
-                            )
+                            React.createElement("div", null, React.createElement("p", { className: "text-xs font-semibold text-slate-400 uppercase tracking-wider" }, kpi.label), React.createElement("h3", { className: `text-3xl font-bold mt-2 ${kpi.valColor}` }, kpi.value)),
+                            React.createElement("div", { className: `p-2 rounded-lg ${kpi.bg} ${kpi.color}` }, React.createElement(kpi.icon, { className: "w-5 h-5" }))
                         )
                     )
                 ),
-                // Charts
                 React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-6" },
-                    // Bar Chart
                     React.createElement("div", { className: "lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col" },
-                        React.createElement("div", { className: "flex justify-between items-center mb-6" },
-                            React.createElement("h3", { className: "text-lg font-bold text-slate-800" }, "Estado de Llenado por Campo"),
-                            React.createElement("span", { className: "px-2 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded" }, "IV Bimestre")
-                        ),
-                        React.createElement("div", { className: "flex-1 min-h-[300px]" },
-                            React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
-                                React.createElement(BarChart, { data: stats.subjectCounts },
-                                    React.createElement(CartesianGrid, { strokeDasharray: "3 3", vertical: false, stroke: "#F1F5F9" }),
-                                    React.createElement(XAxis, { dataKey: "name", tick: {fontSize: 10, fill: '#64748B'}, interval: 0, angle: -45, textAnchor: "end", height: 60 }),
-                                    React.createElement(YAxis, { tick: {fontSize: 12, fill: '#64748B'} }),
-                                    React.createElement(Tooltip, { cursor: {fill: '#F8FAFC'}, contentStyle: {borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'} }),
-                                    React.createElement(Bar, { dataKey: "count", radius: [4, 4, 0, 0] },
-                                        stats.subjectCounts.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))
-                                    )
-                                )
-                            )
-                        )
+                        React.createElement("div", { className: "flex justify-between items-center mb-6" }, React.createElement("h3", { className: "text-lg font-bold text-slate-800" }, "Estado de Llenado por Campo"), React.createElement("span", { className: "px-2 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded" }, "IV Bimestre")),
+                        React.createElement("div", { className: "flex-1 min-h-[300px]" }, React.createElement(ResponsiveContainer, { width: "100%", height: "100%" }, React.createElement(BarChart, { data: stats.subjectCounts }, React.createElement(CartesianGrid, { strokeDasharray: "3 3", vertical: false, stroke: "#F1F5F9" }), React.createElement(XAxis, { dataKey: "name", tick: {fontSize: 10, fill: '#64748B'}, interval: 0, angle: -45, textAnchor: "end", height: 60 }), React.createElement(YAxis, { tick: {fontSize: 12, fill: '#64748B'} }), React.createElement(Tooltip, { cursor: {fill: '#F8FAFC'}, contentStyle: {borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'} }), React.createElement(Bar, { dataKey: "count", radius: [4, 4, 0, 0] }, stats.subjectCounts.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))))))
                     ),
-                    // Donut Chart
                     React.createElement("div", { className: "bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col" },
-                        React.createElement("h3", { className: "text-lg font-bold text-slate-800 mb-2" }, "Progreso Total"),
-                        React.createElement("p", { className: "text-xs text-slate-500 mb-6" }, "Celdas llenas vs vacías."),
-                        React.createElement("div", { className: "flex-1 flex items-center justify-center relative min-h-[220px]" },
-                            React.createElement(ResponsiveContainer, { width: "100%", height: 220 },
-                                React.createElement(PieChart, null,
-                                    React.createElement(Pie, {
-                                        data: stats.donutData,
-                                        cx: "50%", cy: "50%",
-                                        innerRadius: 60, outerRadius: 80,
-                                        paddingAngle: 2, dataKey: "value", stroke: "none"
-                                    }, stats.donutData.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))),
-                                    React.createElement(Tooltip, null)
-                                )
-                            ),
-                            React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none" },
-                                React.createElement("span", { className: "text-3xl font-bold text-slate-800" }, `${stats.progress}%`)
-                            )
-                        ),
+                        React.createElement("h3", { className: "text-lg font-bold text-slate-800 mb-2" }, "Progreso Total"), React.createElement("p", { className: "text-xs text-slate-500 mb-6" }, "Celdas llenas vs vacías."),
+                        React.createElement("div", { className: "flex-1 flex items-center justify-center relative min-h-[220px]" }, React.createElement(ResponsiveContainer, { width: "100%", height: 220 }, React.createElement(PieChart, null, React.createElement(Pie, { data: stats.donutData, cx: "50%", cy: "50%", innerRadius: 60, outerRadius: 80, paddingAngle: 2, dataKey: "value", stroke: "none" }, stats.donutData.map((entry, index) => React.createElement(Cell, { key: `cell-${index}`, fill: entry.color }))), React.createElement(Tooltip, null))), React.createElement("div", { className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none" }, React.createElement("span", { className: "text-3xl font-bold text-slate-800" }, `${stats.progress}%`))),
                         React.createElement("div", { className: "mt-6 space-y-3" },
-                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-slate-50 rounded-lg" },
-                                React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-indigo-500" }), "Completado"),
-                                React.createElement("span", { className: "font-bold text-slate-800" }, stats.donutData[0].value)
-                            ),
-                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-red-50 rounded-lg" },
-                                React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-red-500" }), "Pendiente"),
-                                React.createElement("span", { className: "font-bold text-red-600" }, stats.donutData[1].value)
-                            )
+                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-slate-50 rounded-lg" }, React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-indigo-500" }), "Completado"), React.createElement("span", { className: "font-bold text-slate-800" }, stats.donutData[0].value)),
+                            React.createElement("div", { className: "flex justify-between text-sm p-3 bg-red-50 rounded-lg" }, React.createElement("span", { className: "flex items-center gap-2 text-slate-600" }, React.createElement("div", { className: "w-2 h-2 rounded-full bg-red-500" }), "Pendiente"), React.createElement("span", { className: "font-bold text-red-600" }, stats.donutData[1].value))
                         )
                     )
                 )
             );
         };
 
-        // 3. Matriz
         const MatrixTable = ({ students }) => {
             const [filterEmpty, setFilterEmpty] = useState(false);
             const [search, setSearch] = useState('');
-
             const filteredStudents = useMemo(() => {
                 return students.filter(stu => {
                     const term = search.toLowerCase();
@@ -339,118 +258,42 @@
                     return true;
                 });
             }, [students, search, filterEmpty]);
-
             const renderStatusCell = (isFilled) => {
                 if (isFilled) return React.createElement("div", { className: "mx-auto w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center" }, React.createElement(Check, { className: "w-3 h-3 text-emerald-600" }));
                 return React.createElement("div", { className: "mx-auto w-5 h-5 rounded-full bg-red-50 border border-red-100 flex items-center justify-center" }, React.createElement(XIcon, { className: "w-3 h-3 text-red-400" }));
             };
-
             return React.createElement("div", { className: "p-6 space-y-6 animate-fade-in" },
                 React.createElement("div", { className: "flex flex-col md:flex-row justify-between items-end md:items-center gap-4" },
-                    React.createElement("div", null,
-                        React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Matriz de Control"),
-                        React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, "Incluye Áreas, Transversales, Conducta y Comentarios.")
-                    ),
+                    React.createElement("div", null, React.createElement("h2", { className: "text-2xl font-bold text-slate-800" }, "Matriz de Control"), React.createElement("p", { className: "text-slate-500 text-sm mt-1" }, "Incluye Áreas, Transversales, Conducta y Comentarios.")),
                     React.createElement("div", { className: "flex gap-3 w-full md:w-auto" },
-                        React.createElement("div", { className: "relative flex-1 md:w-64" },
-                            React.createElement(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }),
-                            React.createElement("input", { 
-                                type: "text", 
-                                placeholder: "Buscar estudiante...", 
-                                className: "w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm",
-                                value: search,
-                                onChange: (e) => setSearch(e.target.value)
-                            })
-                        ),
-                        React.createElement("button", { 
-                            onClick: () => setFilterEmpty(!filterEmpty),
-                            className: `px-4 py-2 border rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 ${filterEmpty ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}`
-                        },
-                            React.createElement(Filter, { className: "w-4 h-4" }),
-                            React.createElement("span", { className: "hidden sm:inline" }, "Solo Faltantes")
-                        )
+                        React.createElement("div", { className: "relative flex-1 md:w-64" }, React.createElement(Search, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }), React.createElement("input", { type: "text", placeholder: "Buscar estudiante...", className: "w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm", value: search, onChange: (e) => setSearch(e.target.value) })),
+                        React.createElement("button", { onClick: () => setFilterEmpty(!filterEmpty), className: `px-4 py-2 border rounded-lg text-sm font-bold transition-colors shadow-sm flex items-center gap-2 ${filterEmpty ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'}` }, React.createElement(Filter, { className: "w-4 h-4" }), React.createElement("span", { className: "hidden sm:inline" }, "Solo Faltantes"))
                     )
                 ),
                 React.createElement("div", { className: "bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden" },
                     React.createElement("div", { className: "overflow-x-auto" },
                         React.createElement("table", { className: "w-full text-left border-collapse" },
-                            React.createElement("thead", null,
-                                React.createElement("tr", { className: "bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider" },
-                                    React.createElement("th", { className: "px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10" }, "ID"),
-                                    React.createElement("th", { className: "px-2 py-4 w-16 text-center border-r border-slate-100" }, "Hoja"),
-                                    React.createElement("th", { className: "px-4 py-4 min-w-[200px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10 shadow-sm" }, "Estudiante"),
-                                    SUBJECT_FIELDS.map(field => 
-                                        React.createElement("th", { key: field.key, className: "px-2 align-bottom border-r border-slate-100 bg-opacity-30", style: { backgroundColor: `${field.color}10` } },
-                                            React.createElement("div", { className: "whitespace-nowrap pb-2 text-center text-[10px] w-full" },
-                                                React.createElement("div", { style: { writingMode: 'vertical-rl', transform: 'rotate(180deg)', margin: '0 auto' } }, field.label)
-                                            )
-                                        )
-                                    )
-                                )
-                            ),
-                            React.createElement("tbody", { className: "divide-y divide-slate-100 text-sm" },
-                                filteredStudents.length > 0 ? filteredStudents.map(stu => 
-                                    React.createElement("tr", { key: stu.id, className: "hover:bg-slate-50 transition-colors border-b border-slate-50 group" },
-                                        React.createElement("td", { className: "px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10" }, String(stu.id).padStart(2,'0')),
-                                        React.createElement("td", { className: "px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100" }, stu.hoja),
-                                        React.createElement("td", { className: "px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10" }, stu.name),
-                                        SUBJECT_FIELDS.map(field => 
-                                            React.createElement("td", { key: field.key, className: `px-1 py-2 border-r border-slate-50 text-center ${stu[field.key] ? 'bg-emerald-50/50' : 'bg-red-50/30'}` },
-                                                renderStatusCell(stu[field.key])
-                                            )
-                                        )
-                                    )
-                                ) : React.createElement("tr", null, 
-                                    React.createElement("td", { colSpan: 17, className: "p-12 text-center" }, 
-                                        React.createElement("h3", { className: "text-slate-900 font-bold" }, "No se encontraron resultados")
-                                    )
-                                )
-                            )
+                            React.createElement("thead", null, React.createElement("tr", { className: "bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider" }, React.createElement("th", { className: "px-2 py-4 w-10 text-center sticky left-0 bg-slate-50 z-10" }, "ID"), React.createElement("th", { className: "px-2 py-4 w-16 text-center border-r border-slate-100" }, "Hoja"), React.createElement("th", { className: "px-4 py-4 min-w-[200px] border-r border-slate-100 sticky left-10 bg-slate-50 z-10 shadow-sm" }, "Estudiante"), SUBJECT_FIELDS.map(field => React.createElement("th", { key: field.key, className: "px-2 align-bottom border-r border-slate-100 bg-opacity-30", style: { backgroundColor: `${field.color}10` } }, React.createElement("div", { className: "whitespace-nowrap pb-2 text-center text-[10px] w-full" }, React.createElement("div", { style: { writingMode: 'vertical-rl', transform: 'rotate(180deg)', margin: '0 auto' } }, field.label)))))),
+                            React.createElement("tbody", { className: "divide-y divide-slate-100 text-sm" }, filteredStudents.length > 0 ? filteredStudents.map(stu => React.createElement("tr", { key: stu.id, className: "hover:bg-slate-50 transition-colors border-b border-slate-50 group" }, React.createElement("td", { className: "px-2 py-3 text-center font-mono text-xs text-slate-400 sticky left-0 bg-white group-hover:bg-slate-50 z-10" }, String(stu.id).padStart(2,'0')), React.createElement("td", { className: "px-2 py-3 text-center font-bold text-xs text-indigo-600 border-r border-slate-100" }, stu.hoja), React.createElement("td", { className: "px-4 py-3 font-medium text-slate-700 whitespace-nowrap border-r border-slate-100 sticky left-10 bg-white group-hover:bg-slate-50 z-10" }, stu.name), SUBJECT_FIELDS.map(field => React.createElement("td", { key: field.key, className: `px-1 py-2 border-r border-slate-50 text-center ${stu[field.key] ? 'bg-emerald-50/50' : 'bg-red-50/30'}` }, renderStatusCell(stu[field.key]))))) : React.createElement("tr", null, React.createElement("td", { colSpan: 17, className: "p-12 text-center" }, React.createElement("h3", { className: "text-slate-900 font-bold" }, "No se encontraron resultados"))))
                         )
                     )
                 )
             );
         };
 
-        // 4. Modal
         const ConnectionModal = ({ isOpen, onClose, onSync, currentUrl, loading }) => {
             const [url, setUrl] = useState(currentUrl || '');
             useEffect(() => { setUrl(currentUrl || ''); }, [currentUrl]);
             if (!isOpen) return null;
-
             return React.createElement("div", { className: "fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" },
                 React.createElement("div", { className: "bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" },
-                    React.createElement("div", { className: "p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50" },
-                        React.createElement("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2" }, React.createElement(Database, { className: "w-5 h-5 text-indigo-600" }), "Conectar Drive"),
-                        React.createElement("button", { onClick: onClose, className: "text-slate-400" }, React.createElement(X, { className: "w-5 h-5" }))
-                    ),
-                    React.createElement("div", { className: "p-6 space-y-6" },
-                        React.createElement("div", null,
-                            React.createElement("label", { className: "block text-xs font-bold text-slate-500 uppercase mb-2" }, "Enlace CSV de Google Drive"),
-                            React.createElement("div", { className: "relative" },
-                                React.createElement(LinkIcon, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }),
-                                React.createElement("input", { 
-                                    type: "text", 
-                                    value: url, onChange: (e) => setUrl(e.target.value),
-                                    placeholder: "https://docs.google.com/spreadsheets/.../pub?output=csv", 
-                                    className: "w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                })
-                            ),
-                            React.createElement("p", { className: "text-[10px] text-slate-400 mt-2" }, "Archivo > Compartir > Publicar en la web > CSV.")
-                        )
-                    ),
-                    React.createElement("div", { className: "p-4 bg-slate-50 flex justify-end gap-3" },
-                        React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-slate-600 font-bold text-sm" }, "Cancelar"),
-                        React.createElement("button", { onClick: () => onSync(url), disabled: loading, className: "px-6 py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg flex items-center gap-2 disabled:opacity-50" },
-                            loading ? React.createElement(RefreshCw, { className: "w-4 h-4 animate-spin" }) : React.createElement(ArrowRight, { className: "w-4 h-4" }),
-                            "Sincronizar"
-                        )
-                    )
+                    React.createElement("div", { className: "p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50" }, React.createElement("h3", { className: "text-lg font-bold text-slate-800 flex items-center gap-2" }, React.createElement(Database, { className: "w-5 h-5 text-indigo-600" }), "Conectar Drive"), React.createElement("button", { onClick: onClose, className: "text-slate-400" }, React.createElement(X, { className: "w-5 h-5" }))),
+                    React.createElement("div", { className: "p-6 space-y-6" }, React.createElement("div", null, React.createElement("label", { className: "block text-xs font-bold text-slate-500 uppercase mb-2" }, "Enlace CSV de Google Drive"), React.createElement("div", { className: "relative" }, React.createElement(LinkIcon, { className: "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" }), React.createElement("input", { type: "text", value: url, onChange: (e) => setUrl(e.target.value), placeholder: "https://docs.google.com/spreadsheets/.../pub?output=csv", className: "w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" })), React.createElement("p", { className: "text-[10px] text-slate-400 mt-2" }, "Archivo > Compartir > Publicar en la web > CSV."))),
+                    React.createElement("div", { className: "p-4 bg-slate-50 flex justify-end gap-3" }, React.createElement("button", { onClick: onClose, className: "px-4 py-2 text-slate-600 font-bold text-sm" }, "Cancelar"), React.createElement("button", { onClick: () => onSync(url), disabled: loading, className: "px-6 py-2 bg-indigo-600 text-white font-bold text-sm rounded-lg flex items-center gap-2 disabled:opacity-50" }, loading ? React.createElement(RefreshCw, { className: "w-4 h-4 animate-spin" }) : React.createElement(ArrowRight, { className: "w-4 h-4" }), "Sincronizar"))
                 )
             );
         };
 
-        // --- APP PRINCIPAL ---
         const App = () => {
             const [user, setUser] = useState(null);
             const [currentGrade, setCurrentGrade] = useState('INICIAL 3');
@@ -462,89 +305,37 @@
             const [currentDriveUrl, setCurrentDriveUrl] = useState('');
             const [lastUpdated, setLastUpdated] = useState(null);
 
-            // Auth
             useEffect(() => {
                 if (!auth) return;
-                
                 const initAuth = async () => {
                     try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error("Auth error:", error);
-                    }
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } 
+                        else { await signInAnonymously(auth); }
+                    } catch (error) { console.error("Auth error:", error); }
                 };
                 initAuth();
-                
                 return onAuthStateChanged(auth, setUser);
             }, []);
 
-            // Data
             useEffect(() => {
                 if (!user || !db) { setLoading(false); return; }
                 setLoading(true);
-                // Usamos una colección temporal si estamos en el entorno de prueba para evitar colisiones
-                
-                // Firestore v9 modular path construction
                 let gradeDocRef;
-                if (typeof __app_id !== 'undefined') {
-                    gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade);
-                } else {
-                      // Fallback simple path para producción propia si se desea
-                    gradeDocRef = doc(db, 'grades', currentGrade);
-                }
-
+                if (typeof __app_id !== 'undefined') { gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade); } 
+                else { gradeDocRef = doc(db, 'grades', currentGrade); }
                 return onSnapshot(gradeDocRef, (docSnapshot) => {
                     if (docSnapshot.exists()) {
                         const data = docSnapshot.data();
                         setStudents(data.students || []);
                         setCurrentDriveUrl(data.driveUrl || '');
                         setLastUpdated(data.lastUpdated ? new Date(data.lastUpdated) : null);
-                    } else {
-                        setStudents([]); setCurrentDriveUrl(''); setLastUpdated(null);
-                    }
+                    } else { setStudents([]); setCurrentDriveUrl(''); setLastUpdated(null); }
                     setLoading(false);
+                }, (error) => {
+                    console.error("Firestore Error:", error);
+                    // No bloquear la UI si es solo error de lectura, pero notificar
                 });
             }, [user, currentGrade]);
-
-            // Sync Logic
-            const processCSVData = (rawText) => {
-                const { headers, rows } = parseCSV(rawText);
-                const findCol = (keys) => headers.findIndex(h => keys.some(k => h.includes(k)));
-                const colMap = {
-                    name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
-                    hoja: headers.findIndex(h => h.includes('HOJA')),
-                    mat: findCol(['MAT_IV']), com: findCol(['COM_IV']), ing: findCol(['ING_IV']),
-                    art: findCol(['ART_IV', 'CUL_IV']), dpc: findCol(['DPCYC_IV']), soc: findCol(['CS_IV']),
-                    ef: findCol(['EF_IV']), ept: findCol(['EPT_IV']), cyt: findCol(['CYT_IV']),
-                    rel: findCol(['ER_IV']), trans1: findCol(['TRANS1_IV']), trans2: findCol(['TRANS2_IV']),
-                    cg: findCol(['CG_IV']), c: findCol(['C_IV'])
-                };
-
-                if (colMap.name === -1) { alert("Error: No se encontró columna 'ESTUDIANTE'"); return []; }
-
-                return rows.map((row, idx) => {
-                    if (!row[colMap.name]) return null;
-                    const isFilled = (colIdx) => {
-                        if (colIdx === -1) return false;
-                        const val = row[colIdx];
-                        if (!val) return false;
-                        const c = val.toString().trim().toUpperCase();
-                        return c !== '' && c !== 'FALSE' && !c.includes('#DIV') && c !== '-';
-                    };
-                    return {
-                        id: idx + 1, hoja: row[colMap.hoja] || `N${idx+1}`, name: row[colMap.name],
-                        mat: isFilled(colMap.mat), com: isFilled(colMap.com), ing: isFilled(colMap.ing),
-                        art: isFilled(colMap.art), dpc: isFilled(colMap.dpc), soc: isFilled(colMap.soc),
-                        ef: isFilled(colMap.ef), ept: isFilled(colMap.ept), cyt: isFilled(colMap.cyt),
-                        rel: isFilled(colMap.rel), trans1: isFilled(colMap.trans1), trans2: isFilled(colMap.trans2),
-                        cg: isFilled(colMap.cg), c: isFilled(colMap.c)
-                    };
-                }).filter(s => s !== null);
-            };
 
             const handleSync = async (url) => {
                 if (!url) return;
@@ -555,36 +346,17 @@
                     if (!response.ok) throw new Error('Error al descargar');
                     const students = processCSVData(await response.text());
                     if (students.length > 0 && db) {
-                        // Guardar datos
                         let gradeDocRef;
-                        if (typeof __app_id !== 'undefined') {
-                            gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade);
-                        } else {
-                            gradeDocRef = doc(db, 'grades', currentGrade);
-                        }
-                        
-                        await setDoc(gradeDocRef, {
-                            students, driveUrl: url, lastUpdated: new Date().toISOString()
-                        });
+                        if (typeof __app_id !== 'undefined') { gradeDocRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'grades', currentGrade); } 
+                        else { gradeDocRef = doc(db, 'grades', currentGrade); }
+                        await setDoc(gradeDocRef, { students, driveUrl: url, lastUpdated: new Date().toISOString() });
                         setIsModalOpen(false);
                     }
                 } catch (e) { alert("Error al sincronizar. Verifica el enlace."); console.error(e); }
                 setLoading(false);
             };
 
-            // Warning si no hay config
-            if (!firebaseInitialized) {
-                return React.createElement("div", { className: "h-screen flex flex-col items-center justify-center bg-slate-100 p-4" },
-                    React.createElement("div", { className: "bg-white p-8 rounded-xl shadow-lg max-w-md text-center" },
-                        React.createElement(AlertCircle, { className: "w-12 h-12 text-red-500 mx-auto mb-4" }),
-                        React.createElement("h2", { className: "text-xl font-bold text-slate-800" }, "Falta Configuración de Firebase"),
-                        React.createElement("p", { className: "text-slate-600 mt-2" }, "Si ves este mensaje en GitHub/Producción: Edita el index.html y agrega tus credenciales."),
-                        React.createElement("div", { className: "mt-4 p-3 bg-slate-100 rounded text-xs text-left font-mono overflow-x-auto" }, 
-                            "const firebaseConfig = { apiKey: ... }"
-                        )
-                    )
-                );
-            }
+            if (!firebaseInitialized) { return React.createElement("div", { className: "p-8 text-center" }, "Error Fatal: Firebase no inició"); }
 
             return React.createElement("div", { className: "flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden" },
                 isSidebarOpen && React.createElement("div", { className: "fixed inset-0 bg-black/50 z-40 md:hidden", onClick: () => setIsSidebarOpen(false) }),
@@ -593,36 +365,24 @@
                     React.createElement("header", { className: "bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-30" },
                         React.createElement("div", { className: "flex items-center gap-4" },
                             React.createElement("button", { className: "md:hidden p-2 hover:bg-slate-100 rounded-lg", onClick: () => setIsSidebarOpen(true) }, React.createElement(Menu, { className: "w-6 h-6 text-slate-600" })),
-                            React.createElement("div", null,
-                                React.createElement("h2", { className: "text-xl font-bold text-slate-800" }, currentGrade),
-                                React.createElement("div", { className: "flex items-center gap-2 mt-1" },
-                                    React.createElement("div", { className: `w-2 h-2 rounded-full ${lastUpdated ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}` }),
-                                    React.createElement("span", { className: "text-xs text-slate-500 font-medium" }, lastUpdated ? `Act: ${lastUpdated.toLocaleTimeString()}` : 'Desconectado')
-                                )
-                            )
+                            React.createElement("div", null, React.createElement("h2", { className: "text-xl font-bold text-slate-800" }, currentGrade), React.createElement("div", { className: "flex items-center gap-2 mt-1" }, React.createElement("div", { className: `w-2 h-2 rounded-full ${lastUpdated ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}` }), React.createElement("span", { className: "text-xs text-slate-500 font-medium" }, lastUpdated ? `Act: ${lastUpdated.toLocaleTimeString()}` : 'Desconectado')))
                         ),
-                        React.createElement("button", { onClick: () => setIsModalOpen(true), className: "flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm" },
-                            React.createElement(Database, { className: "w-4 h-4" }),
-                            React.createElement("span", { className: "hidden md:inline" }, "Conectar Drive")
-                        )
+                        React.createElement("button", { onClick: () => setIsModalOpen(true), className: "flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm" }, React.createElement(Database, { className: "w-4 h-4" }), React.createElement("span", { className: "hidden md:inline" }, "Conectar Drive"))
                     ),
-                    React.createElement("div", { className: "px-6 pt-6 pb-2" },
-                        React.createElement("div", { className: "flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit" },
-                            React.createElement("button", { onClick: () => setView('dashboard'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'dashboard' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(LayoutDashboard, { className: "w-4 h-4" }), "Dashboard"),
-                            React.createElement("button", { onClick: () => setView('matrix'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'matrix' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(Table, { className: "w-4 h-4" }), "Matriz")
-                        )
-                    ),
-                    React.createElement("main", { className: "flex-1 overflow-auto bg-slate-50 relative" },
-                        view === 'dashboard' && React.createElement(DashboardStats, { students }),
-                        view === 'matrix' && React.createElement(MatrixTable, { students })
-                    )
+                    React.createElement("div", { className: "px-6 pt-6 pb-2" }, React.createElement("div", { className: "flex space-x-1 bg-slate-200 p-1 rounded-xl w-fit" }, React.createElement("button", { onClick: () => setView('dashboard'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'dashboard' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(LayoutDashboard, { className: "w-4 h-4" }), "Dashboard"), React.createElement("button", { onClick: () => setView('matrix'), className: `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${view === 'matrix' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-600 hover:text-slate-800'}` }, React.createElement(Table, { className: "w-4 h-4" }), "Matriz"))),
+                    React.createElement("main", { className: "flex-1 overflow-auto bg-slate-50 relative" }, view === 'dashboard' && React.createElement(DashboardStats, { students }), view === 'matrix' && React.createElement(MatrixTable, { students }))
                 ),
                 React.createElement(ConnectionModal, { isOpen: isModalOpen, onClose: () => setIsModalOpen(false), onSync: handleSync, currentUrl: currentDriveUrl, loading })
             );
         };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        try {
+            const root = createRoot(document.getElementById('root'));
+            root.render(React.createElement(App));
+        } catch (error) {
+            console.error("Render Error:", error);
+            document.body.innerHTML = `<h1 style="color:red">Error Crítico al Renderizar: ${error.message}</h1>`;
+        }
     </script>
 </body>
 </html>
