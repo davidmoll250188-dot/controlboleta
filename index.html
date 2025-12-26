@@ -47,7 +47,7 @@
     <div id="loader-fallback">
         <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
         <h2 class="text-slate-600 font-bold">Cargando BoletaTracker...</h2>
-        <p class="text-xs text-slate-400 mt-2">Versión v2.6 (Exact Match Fix)</p>
+        <p class="text-xs text-slate-400 mt-2">Versión v2.7 (Token Match Fix)</p>
     </div>
 
     <div id="root"></div>
@@ -57,7 +57,6 @@
         // --- 1. Desempaquetar Librerías con Seguridad ---
         const { useState, useEffect, useMemo, useRef } = React;
         
-        // Manejo seguro de Recharts por si la CDN falla o bloquea
         let RechartsLib = window.Recharts || {};
         const { 
             BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -77,7 +76,6 @@
             measurementId: "G-XPMK46L6HY"
         };
 
-        // Inicializar Firebase
         let app, auth, db;
         try {
             if (!firebase.apps.length) {
@@ -92,10 +90,9 @@
             console.error("Error Firebase:", error);
         }
 
-        // --- 3. Componente de Iconos (React Safe Wrapper) ---
+        // --- 3. Componente de Iconos (Safe) ---
         const Icon = ({ name, className = "", size = 20 }) => {
             const wrapperRef = useRef(null);
-
             useEffect(() => {
                 if (wrapperRef.current && window.lucide) {
                     const i = document.createElement('i');
@@ -103,10 +100,8 @@
                     i.setAttribute('class', className);
                     i.setAttribute('width', size);
                     i.setAttribute('height', size);
-                    
                     wrapperRef.current.innerHTML = '';
                     wrapperRef.current.appendChild(i);
-
                     window.lucide.createIcons({
                         root: wrapperRef.current,
                         nameAttr: 'data-lucide',
@@ -114,38 +109,38 @@
                     });
                 }
             }, [name, className, size]);
-
             return <span ref={wrapperRef} style={{ display: 'inline-flex', verticalAlign: 'middle' }}></span>;
         };
 
-        // Constantes
         const GRADES_STRUCTURE = [
             { level: 'INICIAL', icon: 'baby', grades: ['INICIAL 3', 'INICIAL 4', 'INICIAL 5'] },
             { level: 'PRIMARIA', icon: 'book-open', grades: ['PRIMERO-P', 'SEGUNDO-P', 'TERCERO-P', 'CUARTO-P', 'QUINTO-P', 'SEXTO-P'] },
             { level: 'SECUNDARIA', icon: 'school', grades: ['PRIMERO-S', 'SEGUNDO-S', 'TERCERO-S', 'CUARTO-S', 'QUINTO-S'] }
         ];
 
-        // CONFIGURACIÓN DE COLUMNAS (DEFINITIVA)
-        // Incluimos tus encabezados exactos (DCPYC, CYT, CS, C)
+        // --- CONFIGURACIÓN DE COLUMNAS ACTUALIZADA ---
         const SUBJECT_FIELDS = [
-            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE'] },
-            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU'] },
+            { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
+            { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
             { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
-            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL'] },
+            { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
+            // Aseguramos DCPYC y sus variantes
             { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA'] }, 
+            // CS no debe confundirse con C
             { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
             { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
             { key: 'ept', label: 'EPT', color: '#4F46E5', csv: ['EPT'] },
+            // Aseguramos CYT
             { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
             { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['REL', 'ER', 'RELIGION', 'RELIGIÓN'] },
             { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
             { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
+            // C es Conducta
             { key: 'c', label: 'Conducta', color: '#10B981', csv: ['C', 'COND', 'COMPORTAMIENTO'] },
             { key: 'cg', label: 'Comentario', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] }
         ];
 
-        // --- 4. Componentes ---
-
+        // --- Componentes UI ---
         const Sidebar = ({ currentGrade, onSelectGrade, isOpen, onClose }) => (
             <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col`}>
                 <div className="p-6 border-b border-slate-100 relative">
@@ -356,17 +351,13 @@
         const ConnectionModal = ({ isOpen, onClose, onSync, currentUrl }) => {
             const [url, setUrl] = useState(currentUrl || '');
             const [isSyncing, setIsSyncing] = useState(false);
-
             useEffect(() => { setUrl(currentUrl || ''); }, [currentUrl]);
-
             if(!isOpen) return null;
-
             const handleSyncClick = async () => {
                 setIsSyncing(true);
                 await onSync(url);
                 setIsSyncing(false);
             };
-
             return (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
@@ -395,7 +386,6 @@
             const [currentDriveUrl, setCurrentDriveUrl] = useState('');
             const [lastUpdated, setLastUpdated] = useState(null);
 
-            // Auth
             useEffect(() => {
                 const unsub = auth.onAuthStateChanged(u => {
                     if (u) setUser(u);
@@ -404,7 +394,6 @@
                 return () => unsub();
             }, []);
 
-            // Data
             useEffect(() => {
                 if (!user) return;
                 const docRef = db.collection('grades').doc(currentGrade);
@@ -422,67 +411,41 @@
                 return () => unsub();
             }, [user, currentGrade]);
 
-            // Sync
             const parseCSV = (text) => {
                 const lines = text.split(/\r\n|\n/);
-                // 1. Limpieza de Cabeceras (Uppercase y sin comillas)
                 const headers = lines[0].split(',').map(h => h.trim().toUpperCase().replace(/"/g,''));
-                
-                // 2. Mapeo de columnas básicas
                 const colMap = {
                     name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
                     hoja: headers.findIndex(h => h.includes('HOJA')),
                 };
-                
                 if(colMap.name === -1) return [];
 
-                // 3. Mapeo de Cursos con Lógica de Precisión
-                // Normaliza texto para ignorar tildes
+                // --- MEJORA: Búsqueda basada en Fichas (Tokens) ---
                 const normalize = (txt) => txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
                 const headersNorm = headers.map(normalize);
 
                 const subjectCols = {};
                 SUBJECT_FIELDS.forEach(f => {
-                    // Estrategia:
-                    // 1. SPLIT: Dividir el encabezado por el guion bajo ('_')
-                    // 2. CHECK: Verificar si la primera parte es exactamente una de las palabras clave
-                    // Ej: "DCPYC_IV" -> "DCPYC". ¿Está "DCPYC" en la lista? Sí -> Match.
-                    // Ej: "C_IV" -> "C". ¿Está "C" en la lista? Sí -> Match.
-                    // Esto evita que "C" coincida con "CS", "CYT" o "COM".
-
                     let idx = headersNorm.findIndex(h => {
-                         const parts = h.split('_');
-                         const prefix = parts[0]; // La palabra antes del guion
-                         
-                         // Coincidencia exacta del prefijo
-                         if (f.csv.includes(prefix)) return true;
-                         
-                         // Fallback: si no hay guion, intentamos match exacto total
-                         if (f.csv.includes(h)) return true;
-
-                         return false;
+                        // 1. Dividir el header en palabras/fichas (ej: "DCPYC_IV" -> ["DCPYC", "IV"])
+                        const tokens = h.split(/[^A-Z0-9]+/); 
+                        
+                        // 2. Verificar si ALGUNA ficha es exactamente la palabra clave
+                        const hasKeyword = tokens.some(t => f.csv.includes(t));
+                        
+                        // 3. Verificar bimestre
+                        const hasBimestre = h.includes('IV') || h.includes('4') || h.includes(' IV');
+                        
+                        return hasKeyword && hasBimestre;
                     });
-
-                    // Si no encontró con lógica estricta, intentamos lógica "contains" (con mucho cuidado)
-                    // Solo si NO es una clave corta peligrosa como 'C'
-                    if (idx === -1 && f.key !== 'c') {
-                        idx = headersNorm.findIndex(h => {
-                            const hasKeyword = f.csv.some(k => h.includes(k));
-                            const hasBimestre = h.includes('_IV') || h.includes(' IV') || h.includes('4');
-                            return hasKeyword && hasBimestre;
-                        });
-                    }
                     
                     subjectCols[f.key] = idx;
                 });
-                
-                console.log("Columnas Encontradas:", subjectCols);
+                console.log("Columnas Detectadas:", subjectCols);
 
-                // 4. Extracción de Datos
                 const result = [];
                 for(let i=1; i<lines.length; i++){
                     if(!lines[i].trim()) continue;
-                    // Regex para separar por comas pero ignorar las que están dentro de comillas
                     const row = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     if(!row[colMap.name]) continue;
 
@@ -508,8 +471,6 @@
 
             const handleSync = async (url) => {
                 if(!url) return;
-                
-                // Helper para fetch con timeout
                 const fetchWithProxy = async (proxyUrl) => {
                     const controller = new AbortController();
                     const id = setTimeout(() => controller.abort(), 10000);
@@ -526,7 +487,6 @@
 
                 try {
                     let cleanUrl = url;
-                    // Auto-fix URL si es de edición o pubhtml
                     if (url.includes('/edit')) {
                         cleanUrl = url.replace(/\/edit.*$/, '/export?format=csv');
                     } else if (url.includes('/pubhtml')) {
@@ -534,20 +494,12 @@
                     }
 
                     let txt = "";
-                    let errorDetails = "";
-
-                    // Estrategia de doble proxy
                     try {
-                        // Intento 1: AllOrigins
                         txt = await fetchWithProxy(`https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`);
                     } catch (e1) {
-                        console.warn("Proxy 1 falló:", e1);
-                        errorDetails += `Proxy 1: ${e1.message}. `;
                         try {
-                            // Intento 2: CorsProxy
                             txt = await fetchWithProxy(`https://corsproxy.io/?${encodeURIComponent(cleanUrl)}`);
                         } catch (e2) {
-                            console.warn("Proxy 2 falló:", e2);
                             throw new Error("No se pudo conectar. Verifica que el enlace sea 'Público en la web'.");
                         }
                     }
