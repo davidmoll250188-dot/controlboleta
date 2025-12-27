@@ -134,7 +134,7 @@
 
             <div class="px-4 mt-6">
                 <!-- Connection Status -->
-                <div id="connection-status" class="px-3 py-2 mb-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-2">
+                <div id="connection-status" class="px-3 py-2 mb-2 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-2 cursor-pointer hover:bg-slate-100" onclick="showDebugInfo()">
                     <div class="relative flex-shrink-0">
                         <div class="w-2 h-2 rounded-full bg-slate-400" id="status-dot"></div>
                         <div class="w-2 h-2 rounded-full bg-slate-400 animate-ping absolute top-0 left-0 hide" id="status-ping"></div>
@@ -143,12 +143,18 @@
                         <p class="text-[10px] font-medium text-slate-700 truncate" id="status-text">Sin datos</p>
                         <p class="text-[9px] text-slate-400 truncate hidden" id="status-subtext">Caché Local</p>
                     </div>
+                    <i data-lucide="settings-2" class="w-3 h-3 text-slate-400"></i>
                 </div>
 
-                <button onclick="openModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm">
-                    <i data-lucide="database" class="w-3 h-3"></i>
-                    <span>Conectar Datos</span>
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="openModal()" class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-300 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 rounded-lg text-xs font-bold transition-all shadow-sm">
+                        <i data-lucide="database" class="w-3 h-3"></i>
+                        <span>Conectar</span>
+                    </button>
+                    <button onclick="forceRefresh()" class="flex-shrink-0 flex items-center justify-center px-3 py-2 bg-white border border-slate-300 hover:text-red-500 text-slate-500 rounded-lg transition-all shadow-sm" title="Borrar Caché y Recargar">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                    </button>
+                </div>
             </div>
         </nav>
 
@@ -407,7 +413,7 @@
             'secundaria': { label: 'Secundaria', icon: 'graduation-cap', levels: [ {id:'sec_1',name:'1° Secundaria'}, {id:'sec_2',name:'2° Secundaria'}, {id:'sec_3',name:'3° Secundaria'}, {id:'sec_4',name:'4° Secundaria'}, {id:'sec_5',name:'5° Secundaria'} ] }
         };
 
-        // CONFIGURACIÓN DE COLUMNAS ACTUALIZADA
+        // --- CONFIGURACIÓN DE COLUMNAS ACTUALIZADA ---
         const SUBJECTS_CONFIG = {
             'primaria': [
                 { key: 'mat', label: 'Matemática', color: '#4F46E5', csv: ['MAT', 'MATE', 'MATEMATICA'] },
@@ -416,7 +422,7 @@
                 { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
                 { key: 'ps', label: 'Personal Soc.', color: '#4F46E5', csv: ['PS', 'PERSONAL', 'SOCIAL'] }, 
                 { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
-                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE', 'TECNOLOGIA', 'NATURA'] },
                 { key: 'rel', label: 'Religión', color: '#4F46E5', csv: ['ER', 'REL', 'RELIGION', 'RELIGIÓN'] },
                 { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
                 { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
@@ -428,6 +434,7 @@
                 { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
                 { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
                 { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
+                // FIX: DPCYC Keywords updated
                 { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA', 'DESARROLLO', 'CIUDADANIA', 'CIVICA', 'DPCC_IV', 'DPC_IV'] }, 
                 { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
                 { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
@@ -454,10 +461,11 @@
 
         let state = {
             activeGradeId: 'sec_5',
-            dataCache: {},
+            dataCache: JSON.parse(localStorage.getItem('bt_cache')) || {},
             urls: JSON.parse(localStorage.getItem('bt_urls')) || {},
             filterEmpty: false,
-            charts: {}
+            charts: {},
+            debugHeaders: []
         };
 
         // --- 2. INITIALIZATION ---
@@ -489,7 +497,7 @@
             lucide.createIcons();
         }
 
-        // --- 3. DATA LOGIC & DIAGNOSTICS ---
+        // --- 3. DATA LOGIC ---
 
         function getCurrentLevel() {
             if (state.activeGradeId.startsWith('pri')) return 'primaria';
@@ -519,25 +527,23 @@
             document.getElementById('dash-title').textContent = `Resumen: ${gradeName}`;
             document.getElementById('mobile-header-title').textContent = gradeName;
             
-            // Fix: Only clear view if we don't have cache
-            if (!state.dataCache[gradeId]) {
-                clearView();
-            }
-            
             const gradeUrl = state.urls[gradeId];
 
             if (state.dataCache[gradeId]) {
-                // LOAD FROM CACHE FIRST (SPEED FIX)
+                // RENDER FROM CACHE FIRST (Does NOT clear view)
                 renderGradeData(state.dataCache[gradeId]);
                 document.getElementById('status-subtext').classList.remove('hidden');
+                document.getElementById('status-text').textContent = "Datos en memoria";
                 
-                // Then try to update silently if URL exists
+                // Try background update
                 if(gradeUrl) fetchUrlData(gradeUrl, true);
             } else if (gradeUrl) {
+                clearView();
                 document.getElementById('status-subtext').classList.add('hidden');
                 updateStatus('syncing', 'Sincronizando...');
                 await fetchUrlData(gradeUrl, false);
             } else {
+                clearView();
                 showNoDataState(gradeName);
             }
         }
@@ -546,7 +552,20 @@
             if (!results.data || results.data.length === 0) return;
 
             const rows = results.data;
-            const headers = rows[0].map(h => h.toUpperCase().trim());
+            
+            // SMART HEADER DETECTION (Look for row with "ESTUDIANTE" or "NOMBRES")
+            let headerRowIndex = 0;
+            for(let i=0; i < Math.min(rows.length, 10); i++) {
+                const rowStr = rows[i].join(' ').toUpperCase();
+                if(rowStr.includes('ESTUDIANTE') || rowStr.includes('NOMBRES')) {
+                    headerRowIndex = i;
+                    break;
+                }
+            }
+
+            const headers = rows[headerRowIndex].map(h => h.toUpperCase().trim());
+            state.debugHeaders = headers; // Store for debugging
+
             const colMap = {
                 name: headers.findIndex(h => h.includes('ESTUDIANTE') || h.includes('NOMBRES')),
                 hoja: headers.findIndex(h => h.includes('HOJA') || h.includes('TOMAR COMO REFERENCIA') || h.includes('ID'))
@@ -561,11 +580,11 @@
 
             activeSubjects.forEach(f => {
                 let idx = headersNorm.findIndex(h => {
-                    // 1. Strict Token Matching (Safe)
+                    // 1. Token Match (Safe)
                     const tokens = h.split(/[^A-Z0-9]+/); 
                     if (tokens.some(t => f.csv.includes(t)) && (h.includes('IV') || h.includes('4'))) return true;
                     
-                    // 2. Loose Contains Matching (For stubborn columns like DPCYC)
+                    // 2. Loose Contains Match (No 'IV' required for unique keywords like DPCYC)
                     const isLongKeyword = f.csv.some(k => k.length > 2);
                     if (isLongKeyword && f.csv.some(k => h.includes(k))) return true;
 
@@ -576,7 +595,7 @@
                 if(idx === -1) missingSubjects.push(f.label);
             });
 
-            const newStudents = rows.slice(1).map((row, idx) => {
+            const newStudents = rows.slice(headerRowIndex + 1).map((row, idx) => {
                 if (!row[colMap.name]) return null;
                 const student = {
                     id: idx + 1,
@@ -598,12 +617,12 @@
             if (newStudents.length > 0) {
                 // Update Cache
                 state.dataCache[state.activeGradeId] = newStudents;
+                localStorage.setItem('bt_cache', JSON.stringify(state.dataCache));
                 
                 renderGradeData(newStudents);
                 
-                // DIAGNOSTIC ALERT
                 if(missingSubjects.length > 0) {
-                    // Only alert if we haven't alerted for this grade recently to avoid spam
+                    // Only log warning, don't break flow
                     console.warn(`Faltan columnas: ${missingSubjects.join(', ')}`);
                     updateStatus('syncing', 'Incompleto');
                 } else {
@@ -754,6 +773,12 @@
             }
         }
 
+        function showDebugInfo() {
+            const headers = state.debugHeaders || [];
+            let msg = "Encabezados encontrados en el CSV:\n\n" + headers.join(', ');
+            alert(msg);
+        }
+
         function openModal() {
             document.getElementById('modal-grade-label').textContent = document.getElementById('footer-grade-name').textContent;
             document.getElementById('modal-grade-target').textContent = document.getElementById('footer-grade-name').textContent;
@@ -791,6 +816,12 @@
             Papa.parse(file, { complete: processCSV, error: () => showStatus('Error lectura', 'error') });
         }
 
+        function forceRefresh() {
+            state.dataCache = {};
+            localStorage.removeItem('bt_cache');
+            location.reload();
+        }
+
         async function handleUrlSync() {
             let url = document.getElementById('drive-url').value.trim();
             if (!url) { showStatus('URL inválida', 'error'); return; }
@@ -801,43 +832,32 @@
 
         async function fetchUrlData(url, isAutoLoad = false) {
             if(!isAutoLoad) document.getElementById('status-text').textContent = "Sincronizando...";
-            
-            // Auto-fix URL
             if (url.includes('docs.google.com/spreadsheets')) {
                 if (url.includes('/edit')) url = url.replace(/\/edit.*$/, '/export?format=csv');
                 else if (url.includes('/pubhtml')) url = url.replace(/\/pubhtml.*$/, '/pub?output=csv');
             }
-
-            // RACE STRATEGY: Try all proxies at once for speed
             const strategies = [
                 `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
                 `https://corsproxy.io/?${encodeURIComponent(url)}`
             ];
-
             try {
-                // Try fetching from multiple sources in parallel, take first success
                 const response = await Promise.any(strategies.map(u => 
                     fetch(u).then(res => {
                         if (!res.ok) throw new Error('Status ' + res.status);
                         return res.text();
                     })
                 ));
-
                 Papa.parse(response, { 
                     complete: processCSV, 
-                    error: () => { 
-                        if(!isAutoLoad) showStatus('Error CSV', 'error'); 
-                        showNoDataState("Error Formato"); 
-                    } 
+                    error: () => { if(!isAutoLoad) showStatus('Error CSV', 'error'); showNoDataState("Error Formato"); } 
                 });
-
             } catch (error) {
-                // IMPORTANT FIX: Don't clear view if autoload fails, just show status
+                // FIXED: Do NOT clear view if background update fails
                 if(!isAutoLoad) {
                     showStatus('Fallo de conexión', 'error');
                     showNoDataState("Error Conexión");
                 } else {
-                    console.warn("Background update failed, keeping cached data.");
+                    console.warn("Update failed, keeping cache");
                     updateStatus('error', 'Sin conexión');
                 }
             }
