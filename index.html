@@ -428,7 +428,6 @@
                 { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
                 { key: 'ing', label: 'Inglés', color: '#4F46E5', csv: ['ING', 'INGLES'] },
                 { key: 'art', label: 'Arte y Cult.', color: '#4F46E5', csv: ['ART', 'ARTE', 'CUL', 'CULTURA'] },
-                // --- FIX: Búsqueda amplia para DPCYC ---
                 { key: 'dpc', label: 'DPCYC', color: '#4F46E5', csv: ['DCPYC', 'DPC', 'DPCYC', 'DPCC', 'PERSONA', 'DESARROLLO', 'CIUDADANIA', 'CIVICA', 'DPCC_IV', 'DPC_IV'] }, 
                 { key: 'soc', label: 'Ciencias Soc.', color: '#4F46E5', csv: ['CS', 'SOC', 'SOCIALES', 'HISTORIA'] },
                 { key: 'ef', label: 'Ed. Física', color: '#4F46E5', csv: ['EF', 'ED', 'FISICA'] },
@@ -445,7 +444,7 @@
                 { key: 'com', label: 'Comunicación', color: '#4F46E5', csv: ['COM', 'COMU', 'COMUNICACION'] },
                 { key: 'psico', label: 'Psicomotriz', color: '#4F46E5', csv: ['PSICO', 'PSICOMOTRIZ'] },
                 { key: 'ps', label: 'Personal Soc.', color: '#4F46E5', csv: ['PS', 'PERSONAL', 'SOCIAL'] },
-                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE'] },
+                { key: 'cyt', label: 'Ciencia y Tec.', color: '#4F46E5', csv: ['CYT', 'CT', 'CIENCIA', 'CTA', 'AMBIENTE', 'TECNOLOGIA', 'NATURA'] },
                 { key: 'trans1', label: 'Comp. Transv. 1', color: '#F59E0B', csv: ['TRANS1', 'TIC', 'C28'] },
                 { key: 'trans2', label: 'Comp. Transv. 2', color: '#F59E0B', csv: ['TRANS2', 'AUTONOMIA', 'C29'] },
                 { key: 'cg', label: 'Comentario G.', color: '#64748B', csv: ['CG', 'COM', 'OBS', 'COMENTARIO'] },
@@ -520,7 +519,11 @@
             document.getElementById('dash-title').textContent = `Resumen: ${gradeName}`;
             document.getElementById('mobile-header-title').textContent = gradeName;
             
-            clearView();
+            // Fix: Only clear view if we don't have cache
+            if (!state.dataCache[gradeId]) {
+                clearView();
+            }
+            
             const gradeUrl = state.urls[gradeId];
 
             if (state.dataCache[gradeId]) {
@@ -563,7 +566,6 @@
                     if (tokens.some(t => f.csv.includes(t)) && (h.includes('IV') || h.includes('4'))) return true;
                     
                     // 2. Loose Contains Matching (For stubborn columns like DPCYC)
-                    // We only use this if the keyword is long enough to avoid false positives (like 'C')
                     const isLongKeyword = f.csv.some(k => k.length > 2);
                     if (isLongKeyword && f.csv.some(k => h.includes(k))) return true;
 
@@ -830,8 +832,14 @@
                 });
 
             } catch (error) {
-                if(!isAutoLoad) showStatus('Fallo de conexión', 'error');
-                showNoDataState("Error Conexión");
+                // IMPORTANT FIX: Don't clear view if autoload fails, just show status
+                if(!isAutoLoad) {
+                    showStatus('Fallo de conexión', 'error');
+                    showNoDataState("Error Conexión");
+                } else {
+                    console.warn("Background update failed, keeping cached data.");
+                    updateStatus('error', 'Sin conexión');
+                }
             }
         }
     </script>
